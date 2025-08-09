@@ -129,13 +129,15 @@ claude --dangerously-skip-permissions < barbossa_prompt.txt
 
 ## Web Portal
 
-Access the HTTPS dashboard at `https://eastindiaonchaincompany.xyz:8443`
+Access the HTTPS dashboard at `https://eastindiaonchaincompany.xyz` (via Cloudflare Tunnel)
 
 Credentials are stored securely in `~/.barbossa_credentials.json` (outside git repository)
 - Username: `admin`
 - Password: Configured in external file
 
 **🔒 Credentials file has restricted permissions (600) for security**
+
+**Note**: External access is provided via Cloudflare Tunnel to bypass CGNAT restrictions. See [Cloudflare Tunnel Setup](docs/CLOUDFLARE_TUNNEL_SETUP.md) for details.
 
 ### Portal Features
 - Real-time Barbossa status
@@ -243,6 +245,23 @@ This system implements the following security measures:
 5. **Security violation tracking**
 6. **Automated testing** of security controls
 
+## Network Infrastructure
+
+### External Access
+The homeserver uses **Cloudflare Tunnel** to provide external access, bypassing ISP CGNAT restrictions:
+
+- **Main Portal**: https://eastindiaonchaincompany.xyz
+- **Webhook Service**: https://webhook.eastindiaonchaincompany.xyz  
+- **API Endpoint**: https://api.eastindiaonchaincompany.xyz
+
+See [Cloudflare Tunnel Setup Documentation](docs/CLOUDFLARE_TUNNEL_SETUP.md) for configuration details.
+
+### Service Ports
+- **8443**: Barbossa HTTPS Portal (tunneled)
+- **3001**: Davy Jones Webhook Service (tunneled)
+- **80**: API Service (tunneled)
+- **443**: HTTPS Service (tunneled)
+
 ## Troubleshooting
 
 ### Security Test Failures
@@ -260,6 +279,12 @@ If security tests fail:
 1. Check certificates exist in `web_portal/`
 2. Verify port 8443 is not in use
 3. Check Flask is installed: `pip3 install flask flask-httpauth`
+
+### Cloudflare Tunnel Issues
+1. Check tunnel status: `sudo systemctl status cloudflared`
+2. View tunnel logs: `sudo journalctl -u cloudflared -f`
+3. Verify DNS records in Cloudflare Dashboard
+4. See [Cloudflare Tunnel Documentation](docs/CLOUDFLARE_TUNNEL_SETUP.md#troubleshooting)
 
 ## License
 
