@@ -186,10 +186,10 @@ def get_services_status():
     """Get status of related services"""
     services = {}
     
-    # Check if Davy Jones Intern is running
+    # Check if Davy Jones Intern is running (Docker container)
     try:
-        result = subprocess.run(['pgrep', '-f', 'davy-jones-intern'], capture_output=True)
-        services['davy_jones_intern'] = 'running' if result.returncode == 0 else 'stopped'
+        result = subprocess.run(['docker', 'ps', '--filter', 'name=davy-jones-intern', '--format', '{{.Names}}'], capture_output=True, text=True)
+        services['davy_jones_intern'] = 'running' if 'davy-jones-intern' in result.stdout else 'stopped'
     except:
         services['davy_jones_intern'] = 'unknown'
     
@@ -221,13 +221,19 @@ if __name__ == '__main__':
     # Create SSL context for HTTPS
     context = ssl.SSLContext(ssl.PROTOCOL_TLSv1_2)
     
-    # For development - in production, use proper certificates
-    # You'll need to generate these certificates for eastindiaonchaincompany.xyz
+    # Use domain-specific certificates if available, otherwise generate
+    domain_cert = BARBOSSA_DIR / 'web_portal' / 'eastindia.crt'
+    domain_key = BARBOSSA_DIR / 'web_portal' / 'eastindia.key'
     cert_file = BARBOSSA_DIR / 'web_portal' / 'cert.pem'
     key_file = BARBOSSA_DIR / 'web_portal' / 'key.pem'
     
-    if not cert_file.exists() or not key_file.exists():
-        print("Generating self-signed certificates for development...")
+    # Prefer domain certificates if they exist
+    if domain_cert.exists() and domain_key.exists():
+        cert_file = domain_cert
+        key_file = domain_key
+        print("Using domain certificates for eastindiaonchaincompany.xyz")
+    elif not cert_file.exists() or not key_file.exists():
+        print("Generating self-signed certificates...")
         subprocess.run([
             'openssl', 'req', '-x509', '-newkey', 'rsa:4096', 
             '-keyout', str(key_file), '-out', str(cert_file),

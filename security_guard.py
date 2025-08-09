@@ -32,10 +32,11 @@ class RepositorySecurityGuard:
     ]
     
     FORBIDDEN_PATTERNS = [
-        r'zkp2p[/-]',
-        r'ZKP2P[/-]',
-        r'github\.com[/:](zkp2p|ZKP2P)',
-        r'@(zkp2p|ZKP2P)[:/]'
+        # Only block actual repository URLs, not mentions in text
+        r'github\.com[/:](zkp2p|ZKP2P)[/:][\w-]+',  # GitHub repos
+        r'git@github\.com:(zkp2p|ZKP2P)[/:]',  # SSH URLs
+        r'gitlab\.com[/:](zkp2p|ZKP2P)[/:]',  # GitLab repos
+        r'bitbucket\.org[/:](zkp2p|ZKP2P)[/:]'  # Bitbucket repos
     ]
     
     ALLOWED_OWNER = 'ADWilkinson'
