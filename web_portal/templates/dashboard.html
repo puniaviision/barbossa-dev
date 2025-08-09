@@ -12,159 +12,342 @@
         }
         
         body {
-            font-family: 'SF Mono', Monaco, 'Cascadia Code', monospace;
-            background: linear-gradient(135deg, #0a0e27 0%, #1a1f3a 100%);
-            color: #e0e0e0;
+            font-family: 'Courier New', 'Consolas', 'Monaco', monospace;
+            background: #000000;
+            color: #ffffff;
             min-height: 100vh;
+            line-height: 1.2;
+            font-size: 12px;
+            overflow-x: hidden;
         }
         
+        /* Terminal scanline effect */
+        body::before {
+            content: "";
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            z-index: 2;
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            animation: scanline 10s linear infinite;
+        }
+        
+        @keyframes scanline {
+            0% { transform: translateY(0); }
+            100% { transform: translateY(10px); }
+        }
+
         .header {
-            background: rgba(0,0,0,0.3);
-            padding: 20px;
-            border-bottom: 2px solid #00ffcc;
+            background: #000000;
+            padding: 10px 15px;
+            border-bottom: 1px solid #333333;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            font-family: 'Courier New', monospace;
         }
         
         .header h1 {
-            color: #00ffcc;
-            font-size: 28px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: normal;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            border-right: 2px solid #00ff00;
+            padding-right: 10px;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.8; }
+        }
+        
+        .header .status-info {
             display: flex;
+            gap: 20px;
             align-items: center;
+            font-size: 14px;
         }
         
-        .header .status-badge {
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+        .status-badge {
+            padding: 3px 6px;
+            border-radius: 0;
+            font-size: 10px;
+            font-weight: normal;
+            text-transform: uppercase;
+            font-family: 'Courier New', monospace;
+            letter-spacing: 1px;
+            border: 1px solid;
         }
         
-        .status-online { background: #00ff88; color: #000; }
-        .status-offline { background: #ff4444; color: #fff; }
-        .status-working { background: #ffaa00; color: #000; }
-        
+        .status-online { 
+            background: #000; 
+            color: #00ff00; 
+            border-color: #00ff00;
+            text-shadow: 0 0 3px #00ff00;
+        }
+        .status-offline { 
+            background: #000; 
+            color: #ff0000; 
+            border-color: #ff0000;
+            text-shadow: 0 0 3px #ff0000;
+        }
+        .status-working { 
+            background: #000; 
+            color: #ffff00; 
+            border-color: #ffff00;
+            text-shadow: 0 0 3px #ffff00;
+        }
+
         .container {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-            padding: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 10px;
+            padding: 10px;
+            max-width: 1600px;
+            margin: 0 auto;
         }
         
         .card {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 10px;
-            padding: 20px;
-            backdrop-filter: blur(10px);
+            background: #000000;
+            border: 1px solid #333333;
+            border-radius: 0;
+            padding: 10px;
+            position: relative;
+        }
+        
+        .card:hover {
+            border-color: #666666;
         }
         
         .card h2 {
-            color: #00ffcc;
-            margin-bottom: 15px;
-            font-size: 18px;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            padding-bottom: 10px;
+            color: #ffffff;
+            margin-bottom: 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #333333;
+            padding-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            position: relative;
         }
         
+        .card h2::before {
+            content: '[';
+            color: #666666;
+            margin-right: 5px;
+        }
+        
+        .card h2::after {
+            content: ']';
+            color: #666666;
+            margin-left: 5px;
+        }
+
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 10px;
-            margin-bottom: 20px;
+            margin-bottom: 15px;
         }
         
         .stat-box {
-            background: rgba(0,255,204,0.1);
-            border: 1px solid #00ffcc;
-            border-radius: 5px;
-            padding: 10px;
+            background: #000;
+            border: 1px solid #333333;
+            padding: 8px;
             text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .stat-box::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, #00ff00, transparent);
+            animation: scan 3s linear infinite;
+        }
+        
+        @keyframes scan {
+            0% { left: -100%; }
+            100% { left: 100%; }
         }
         
         .stat-box .value {
-            font-size: 24px;
-            font-weight: bold;
-            color: #00ffcc;
+            font-size: 14px;
+            font-weight: normal;
+            color: #ffffff;
+            font-family: 'Courier New', monospace;
         }
         
         .stat-box .label {
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
+            font-size: 9px;
+            color: #999999;
+            margin-top: 2px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        
+
         .log-viewer {
             background: #000;
-            border: 1px solid #333;
-            border-radius: 5px;
-            padding: 10px;
-            height: 300px;
+            border: 1px solid #333333;
+            padding: 5px;
+            height: 200px;
             overflow-y: auto;
-            font-size: 12px;
-            font-family: monospace;
+            font-size: 11px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            position: relative;
+        }
+        
+        .log-viewer::before {
+            content: 'LOGS>';
+            position: absolute;
+            top: -8px;
+            left: 10px;
+            background: #000;
+            padding: 0 5px;
+            color: #666666;
+            font-size: 10px;
         }
         
         .log-entry {
-            padding: 2px 0;
-            border-bottom: 1px solid #111;
+            padding: 2px 4px;
+            border-bottom: 1px solid #1a1a1a;
+            cursor: pointer;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            margin: 0;
+            font-size: 10px;
+            font-family: 'Courier New', monospace;
+            position: relative;
+            transition: all 0.1s;
+            line-height: 1.3;
         }
         
-        .log-entry.error { color: #ff6666; }
-        .log-entry.warning { color: #ffaa00; }
-        .log-entry.info { color: #00aaff; }
-        .log-entry.success { color: #00ff88; }
+        .log-entry::before {
+            content: '>';
+            color: #666666;
+            margin-right: 5px;
+        }
         
+        .log-entry:hover {
+            background: #111111;
+            padding-left: 10px;
+            border-left: 2px solid #666666;
+        }
+        
+        .log-entry.error { 
+            color: #ff0000;
+            text-shadow: 0 0 3px #ff0000;
+        }
+        .log-entry.warning { 
+            color: #ffff00;
+            text-shadow: 0 0 3px #ffff00;
+        }
+        .log-entry.info { 
+            color: #00aaff;
+            text-shadow: 0 0 3px #00aaff;
+        }
+        .log-entry.success { 
+            color: #00ff00;
+            text-shadow: 0 0 3px #00ff00;
+        }
+
         .button {
-            background: #00ffcc;
-            color: #000;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            background: #000;
+            color: #ffffff;
+            border: 1px solid #666666;
+            padding: 5px 10px;
             cursor: pointer;
-            font-weight: bold;
-            margin: 5px;
-            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            font-weight: normal;
+            text-transform: uppercase;
+            margin: 2px;
+            transition: all 0.1s;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .button::before {
+            content: '>';
+            margin-right: 5px;
+        }
+        
+        .button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            background: rgba(0, 255, 0, 0.3);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
         }
         
         .button:hover {
-            background: #00ff88;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,255,204,0.3);
+            background: #ffffff;
+            color: #000;
+            border-color: #ffffff;
+        }
+        
+        .button:active::after {
+            width: 100px;
+            height: 100px;
         }
         
         .button.danger {
-            background: #ff4444;
-            color: #fff;
+            background: #000;
+            border-color: #ff0000;
+            color: #ff0000;
         }
         
         .button.danger:hover {
-            background: #ff6666;
+            background: #ff0000;
+            color: #000;
+            box-shadow: 0 0 10px #ff0000;
         }
         
         .button.secondary {
-            background: #444;
-            color: #fff;
+            background: #000;
+            border-color: #444444;
+            color: #999999;
         }
         
         .button.secondary:hover {
-            background: #555;
+            background: #666666;
+            color: #fff;
+            border-color: #666666;
         }
-        
+
         .process-list {
             list-style: none;
         }
         
         .process-item {
             background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 5px;
-            padding: 10px;
+            border: 1px solid #333;
+            padding: 8px;
             margin: 5px 0;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
         }
         
         .process-info {
@@ -172,10 +355,10 @@
         }
         
         .process-pid {
-            color: #00ffcc;
+            color: #00ff00;
             font-weight: bold;
         }
-        
+
         .work-tally {
             display: flex;
             justify-content: space-around;
@@ -184,48 +367,69 @@
         
         .work-area {
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             background: rgba(255,255,255,0.05);
-            border-radius: 5px;
+            border: 1px solid #333;
             flex: 1;
-            margin: 0 5px;
+            margin: 0 2px;
         }
         
         .work-area .count {
-            font-size: 20px;
+            font-size: 16px;
             font-weight: bold;
-            color: #00ffcc;
+            color: #ffffff;
         }
         
         .work-area .name {
-            font-size: 12px;
-            color: #888;
-            margin-top: 5px;
+            font-size: 10px;
+            color: #666666;
+            margin-top: 3px;
+            text-transform: uppercase;
         }
-        
+
         .tabs {
             display: flex;
-            border-bottom: 1px solid rgba(255,255,255,0.1);
-            margin-bottom: 15px;
+            border-bottom: 1px solid #333333;
+            margin-bottom: 10px;
+            background: #000;
         }
         
         .tab {
-            padding: 10px 20px;
+            padding: 8px 12px;
             cursor: pointer;
-            background: rgba(255,255,255,0.05);
-            border: none;
-            color: #888;
-            transition: all 0.3s;
+            background: #000;
+            border: 1px solid #333333;
+            border-bottom: none;
+            color: #999999;
+            margin-right: 1px;
+            transition: all 0.1s;
+            font-size: 11px;
+            text-transform: uppercase;
+            position: relative;
+        }
+        
+        .tab::before {
+            content: '[';
+            margin-right: 3px;
+            color: #666666;
+        }
+        
+        .tab::after {
+            content: ']';
+            margin-left: 3px;
+            color: #666666;
         }
         
         .tab:hover {
-            background: rgba(255,255,255,0.1);
+            background: rgba(0,255,0,0.1);
+            color: #fff;
         }
         
         .tab.active {
-            background: rgba(0,255,204,0.2);
-            color: #00ffcc;
-            border-bottom: 2px solid #00ffcc;
+            background: #111111;
+            color: #ffffff;
+            border-color: #666666;
+            border-bottom: 1px solid #000;
         }
         
         .tab-content {
@@ -235,17 +439,25 @@
         .tab-content.active {
             display: block;
         }
-        
+
         .search-box {
             width: 100%;
-            padding: 10px;
-            background: rgba(255,255,255,0.05);
-            border: 1px solid rgba(255,255,255,0.1);
-            border-radius: 5px;
-            color: #fff;
-            margin-bottom: 10px;
+            padding: 5px 8px;
+            background: #000;
+            border: 1px solid #333333;
+            color: #ffffff;
+            margin-bottom: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            text-transform: uppercase;
         }
         
+        .search-box:focus {
+            border-color: #666666;
+            outline: none;
+            background: #111111;
+        }
+
         .modal {
             display: none;
             position: fixed;
@@ -259,15 +471,40 @@
         
         .modal-content {
             position: relative;
-            background: #1a1f3a;
-            margin: 50px auto;
-            padding: 20px;
-            width: 80%;
-            max-width: 800px;
-            border-radius: 10px;
-            border: 1px solid #00ffcc;
-            max-height: 80vh;
+            background: #000;
+            margin: 30px auto;
+            padding: 15px;
+            width: 90%;
+            max-width: 1200px;
+            border: 1px solid #666666;
+            max-height: 85vh;
             overflow-y: auto;
+        }
+        
+        .modal-content::before {
+            content: 'TERMINAL OUTPUT';
+            position: absolute;
+            top: -10px;
+            left: 20px;
+            background: #000;
+            padding: 0 10px;
+            color: #999999;
+            font-size: 10px;
+            letter-spacing: 2px;
+        }
+        
+        .modal-log-content {
+            background: #000;
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            max-height: 60vh;
+            overflow-y: auto;
+            padding: 15px;
+            border: 1px solid #333;
         }
         
         .modal-close {
@@ -280,38 +517,157 @@
         }
         
         .modal-close:hover {
-            color: #00ffcc;
+            color: #ffffff;
         }
-        
+
         .loading {
             display: inline-block;
             width: 20px;
             height: 20px;
-            border: 3px solid rgba(0,255,204,0.3);
+            border: 3px solid rgba(0,255,0,0.3);
             border-radius: 50%;
-            border-top-color: #00ffcc;
+            border-top-color: #00ff00;
             animation: spin 1s ease-in-out infinite;
         }
         
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        /* Additional terminal styling improvements */
+        
+        .service-status {
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            border-radius: 0;
+            margin-right: 8px;
+            position: relative;
+            animation: blink 2s infinite;
+        }
+        
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .service-status.active {
+            background: #00ff00;
+            box-shadow: 0 0 8px #00ff00, inset 0 0 3px #00aa00;
+        }
+        
+        .service-status.inactive {
+            background: #ff0000;
+            box-shadow: 0 0 8px #ff0000, inset 0 0 3px #aa0000;
+        }
+        
+        .service-status.error {
+            background: #ffff00;
+            box-shadow: 0 0 5px #ffff00;
+        }
+        
+        .log-container {
+            max-height: 400px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            background: #000;
+        }
+        
+        .error-message {
+            color: #ff0000;
+            background: rgba(255, 0, 0, 0.1);
+            border: 1px solid #ff0000;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        
+        .success-message {
+            color: #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+            border: 1px solid #00ff00;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 3px;
+        }
+        
+        /* Scrollbar styling for terminal theme */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #000;
+            border: 1px solid #003300;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #666666;
+            border-radius: 0;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #999999;
+        }
+        
+        ::-webkit-scrollbar-corner {
+            background: #000;
+        }
+        
+        /* Terminal cursor effect */
+        @keyframes cursor-blink {
+            0%, 49% { opacity: 1; }
+            50%, 100% { opacity: 0; }
+        }
+        
+        .cursor::after {
+            content: '_';
+            animation: cursor-blink 1s infinite;
+            color: #00ff00;
+        }
+        
+        /* Matrix rain effect for background */
+        @keyframes matrix-rain {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        
+        /* Terminal glow effect */
+        .terminal-glow {
+            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
+        }
+        
+        /* Service tab content styling */
+        .service-tab-content {
+            display: none;
+        }
+        
+        .service-tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
     </style>
 </head>
 <body>
     <div class="header">
-        <h1>⚓ Barbossa Control Center</h1>
-        <div>
-            <span id="system-time">{{ timestamp }}</span>
-            <span class="status-badge status-online" id="portal-status">Portal Online</span>
-            <span style="margin-left: 10px;">User: {{ username }}</span>
+        <h1>BARBOSSA_CONTROL_CENTER_V2.0</h1>
+        <div class="status-info">
+            <span id="system-time" style="color: #ffffff; font-family: 'Courier New', monospace; font-size: 11px;">{{ timestamp }}</span>
+            <span class="status-badge status-online" id="portal-status" style="font-size: 10px; text-transform: uppercase;">SYSTEM_ONLINE</span>
+            <span style="color: #999999; font-size: 11px;">USER:{{ username }}</span>
         </div>
     </div>
-    
+
     <div class="container">
         <!-- Barbossa Status Card -->
         <div class="card">
-            <h2>🏴‍☠️ Barbossa Status</h2>
+            <h2>BARBOSSA_STATUS</h2>
             <div class="stats-grid">
                 <div class="stat-box">
                     <div class="value" id="barbossa-status">-</div>
@@ -329,43 +685,46 @@
             <div class="work-tally" id="work-tally">
                 <!-- Populated by JS -->
             </div>
-            <div style="text-align: center; margin-top: 15px;">
-                <button class="button" onclick="triggerBarbossa()">🚀 Trigger Manual Run</button>
-                <button class="button secondary" onclick="refreshStatus()">🔄 Refresh</button>
+            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">
+                <div style="color: #999; font-size: 10px; margin-bottom: 5px;">QUICK_ACTIONS:</div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px;">
+                    <button class="button" onclick="triggerBarbossa('infrastructure')" style="padding: 4px 8px; font-size: 10px;">RUN_INFRA</button>
+                    <button class="button" onclick="triggerBarbossa('personal_projects')" style="padding: 4px 8px; font-size: 10px;">RUN_PROJECTS</button>
+                    <button class="button" onclick="triggerBarbossa('davy_jones')" style="padding: 4px 8px; font-size: 10px;">RUN_DAVY</button>
+                    <button class="button" onclick="triggerBarbossa()" style="padding: 4px 8px; font-size: 10px;">AUTO_RUN</button>
+                    <button class="button secondary" onclick="refreshStatus()" style="padding: 4px 8px; font-size: 10px;">REFRESH</button>
+                    <button class="button secondary" onclick="viewFullLogs()" style="padding: 4px 8px; font-size: 10px;">VIEW_LOGS</button>
+                </div>
             </div>
         </div>
-        
+
         <!-- System Health Card -->
         <div class="card">
-            <h2>💻 System Health</h2>
-            <div id="system-stats">
-                <div style="margin: 10px 0;">
-                    <strong>CPU:</strong> <span id="cpu-usage">Loading...</span>
+            <h2>SYSTEM_HEALTH</h2>
+            <div id="system-stats" style="font-size: 11px; font-family: 'Courier New', monospace;">
+                <div style="margin: 5px 0; color: #ffffff;">
+                    <span style="color: #666666;">CPU........:</span> <span id="cpu-usage" style="color: #ffffff;">SCANNING...</span>
                 </div>
-                <div style="margin: 10px 0;">
-                    <strong>Memory:</strong> <span id="memory-usage">Loading...</span>
+                <div style="margin: 5px 0; color: #ffffff;">
+                    <span style="color: #666666;">MEMORY.....:</span> <span id="memory-usage" style="color: #ffffff;">SCANNING...</span>
                 </div>
-                <div style="margin: 10px 0;">
-                    <strong>Disk:</strong> <span id="disk-usage">Loading...</span>
+                <div style="margin: 5px 0; color: #ffffff;">
+                    <span style="color: #666666;">DISK.......:</span> <span id="disk-usage" style="color: #ffffff;">SCANNING...</span>
+                </div>
+                <div style="margin: 5px 0; color: #ffffff;">
+                    <span style="color: #666666;">UPTIME.....:</span> <span id="uptime" style="color: #ffffff;">SCANNING...</span>
                 </div>
             </div>
-            <h3 style="margin-top: 20px; color: #00ffcc;">Services</h3>
-            <div id="services-list" style="margin-top: 10px;">
+            <h3 style="margin-top: 10px; color: #ffffff; font-size: 11px; border-top: 1px solid #333333; padding-top: 5px;">ACTIVE_SERVICES</h3>
+            <div id="services-list" style="margin-top: 5px;">
                 <!-- Populated by JS -->
             </div>
         </div>
-        
-        <!-- Claude Processes Card -->
-        <div class="card">
-            <h2>🤖 Claude Processes</h2>
-            <ul class="process-list" id="claude-processes">
-                <!-- Populated by JS -->
-            </ul>
-        </div>
-        
-        <!-- Work History Card -->
-        <div class="card">
-            <h2>📜 Work History</h2>
+
+
+        <!-- Work History Card - Double Width -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>WORK_HISTORY</h2>
             <div class="tabs">
                 <button class="tab active" onclick="switchTab('changelogs')">Changelogs</button>
                 <button class="tab" onclick="switchTab('claude-outputs')">Claude Outputs</button>
@@ -373,85 +732,131 @@
             </div>
             
             <div id="changelogs" class="tab-content active">
-                <div id="changelog-list" class="log-viewer">
+                <div id="changelog-list" class="log-viewer" style="height: 300px;">
                     <!-- Populated by JS -->
                 </div>
             </div>
             
             <div id="claude-outputs" class="tab-content">
-                <div id="claude-output-list" class="log-viewer">
+                <div id="claude-output-list" class="log-viewer" style="height: 300px;">
                     <!-- Populated by JS -->
                 </div>
             </div>
             
             <div id="security" class="tab-content">
-                <div id="security-list" class="log-viewer">
+                <div id="security-list" class="log-viewer" style="height: 300px;">
                     <!-- Populated by JS -->
                 </div>
             </div>
         </div>
-        
-        <!-- Log Management Card -->
-        <div class="card">
-            <h2>🗄️ Log Management</h2>
-            <input type="text" class="search-box" id="log-search" placeholder="Search logs..." onkeyup="searchLogs()">
-            <div id="recent-logs" class="log-viewer" style="height: 200px;">
+
+        <!-- Log Management Card - Double Width -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>LOG_MANAGEMENT</h2>
+            <input type="text" class="search-box" id="log-search" placeholder="SEARCH://" onkeyup="searchLogs()">
+            <div id="recent-logs" class="log-viewer" style="height: 250px;">
                 <!-- Populated by JS -->
             </div>
-            <div style="margin-top: 15px;">
-                <button class="button secondary" onclick="showArchiveDialog()">📦 Archive Old Logs</button>
-                <button class="button danger" onclick="clearLogs(30)">🗑️ Clear 30+ Day Logs</button>
+            <div style="margin-top: 10px; text-align: right;">
+                <button class="button secondary" onclick="showArchiveDialog()">ARCHIVE</button>
+                <button class="button danger" onclick="clearLogs(30)">PURGE_30D</button>
             </div>
         </div>
-        
-        <!-- Quick Actions Card -->
-        <div class="card">
-            <h2>⚡ Quick Actions</h2>
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <button class="button" onclick="triggerBarbossa('infrastructure')">🔧 Run Infrastructure</button>
-                <button class="button" onclick="triggerBarbossa('personal_projects')">💻 Run Personal Projects</button>
-                <button class="button" onclick="triggerBarbossa('davy_jones')">🏴‍☠️ Run Davy Jones</button>
-                <button class="button secondary" onclick="viewFullLogs()">📋 View Full Logs</button>
+
+        <!-- Enhanced Service Monitoring Card - Double Width -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>SERVICE_MONITOR</h2>
+            <div class="tabs" id="service-monitor-tabs">
+                <button class="tab active" onclick="switchServiceTab('docker')">DOCKER</button>
+                <button class="tab" onclick="switchServiceTab('tmux')">TMUX</button>
+                <button class="tab" onclick="switchServiceTab('systemd')">SYSTEMD</button>
+                <button class="tab" onclick="switchServiceTab('davy')">DAVY_JONES</button>
+            </div>
+            
+            <div id="docker-services" class="service-tab-content active">
+                <div id="docker-container-list" class="log-viewer" style="height: 200px;">
+                    <!-- Docker containers populated by JS -->
+                </div>
+            </div>
+            
+            <div id="tmux-services" class="service-tab-content" style="display: none;">
+                <div id="tmux-session-list" class="log-viewer" style="height: 200px;">
+                    <!-- Tmux sessions populated by JS -->
+                </div>
+            </div>
+            
+            <div id="systemd-services" class="service-tab-content" style="display: none;">
+                <div id="systemd-service-list" class="log-viewer" style="height: 200px;">
+                    <!-- Systemd services populated by JS -->
+                </div>
+            </div>
+            
+            <div id="davy-services" class="service-tab-content" style="display: none;">
+                <div id="davy-status-info" class="log-viewer" style="height: 200px;">
+                    <!-- Davy Jones status populated by JS -->
+                </div>
             </div>
         </div>
     </div>
+
     
     <!-- Log Viewer Modal -->
     <div id="logModal" class="modal">
         <div class="modal-content">
             <span class="modal-close" onclick="closeModal()">&times;</span>
             <h2 id="modal-title">Log Viewer</h2>
-            <pre id="modal-content" style="background: #000; padding: 15px; border-radius: 5px; color: #0f0; font-size: 12px; overflow: auto; max-height: 60vh;">
+            <div id="modal-content" class="modal-log-content">
                 Loading...
-            </pre>
+            </div>
         </div>
     </div>
-    
     <script>
         let currentData = {};
         
         async function fetchData() {
             try {
-                const [status, changelogs, security, claude, services] = await Promise.all([
-                    fetch('/api/status').then(r => r.json()),
-                    fetch('/api/changelogs').then(r => r.json()),
-                    fetch('/api/security').then(r => r.json()),
-                    fetch('/api/claude').then(r => r.json()),
-                    fetch('/api/services').then(r => r.json())
+                // Fetch data with better error handling
+                const responses = await Promise.allSettled([
+                    fetch('/api/status').then(r => r.ok ? r.json() : Promise.reject(`Status API failed: ${r.status}`)),
+                    fetch('/api/changelogs').then(r => r.ok ? r.json() : Promise.reject(`Changelogs API failed: ${r.status}`)),
+                    fetch('/api/security').then(r => r.ok ? r.json() : Promise.reject(`Security API failed: ${r.status}`)),
+                    fetch('/api/claude').then(r => r.ok ? r.json() : Promise.reject(`Claude API failed: ${r.status}`)),
+                    fetch('/api/services').then(r => r.ok ? r.json() : Promise.reject(`Services API failed: ${r.status}`))
                 ]);
+                
+                // Process responses with fallbacks
+                const [status, changelogs, security, claude, services] = responses.map((response, index) => {
+                    if (response.status === 'fulfilled') {
+                        return response.value;
+                    } else {
+                        const fallbacks = [{}, [], [], [], {}];
+                        console.warn(`API ${index} failed:`, response.reason);
+                        return fallbacks[index];
+                    }
+                });
                 
                 currentData = { status, changelogs, security, claude, services };
                 updateUI();
+                
             } catch (error) {
-                console.error('Error fetching data:', error);
+                console.error('Critical error fetching data:', error);
+                // Show error message to user
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #ff0000; color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
+                errorDiv.textContent = 'Dashboard data loading failed. Retrying...';
+                document.body.appendChild(errorDiv);
+                setTimeout(() => errorDiv.remove(), 3000);
+                
+                // Retry after delay
+                setTimeout(fetchData, 5000);
             }
         }
-        
+
         function updateUI() {
             // Update Barbossa status
             const barbossa = currentData.status?.barbossa;
             if (barbossa) {
-                document.getElementById('barbossa-status').textContent = barbossa.running ? '🟢 Running' : '⚫ Idle';
+                document.getElementById('barbossa-status').textContent = barbossa.running ? 'ACTIVE' : 'IDLE';
                 document.getElementById('next-run').textContent = barbossa.next_run || '-';
                 document.getElementById('claude-count').textContent = barbossa.claude_processes?.length || 0;
                 
@@ -467,21 +872,7 @@
                     `;
                 }
                 
-                // Update Claude processes
-                const claudeList = document.getElementById('claude-processes');
-                claudeList.innerHTML = '';
-                for (const proc of barbossa.claude_processes || []) {
-                    claudeList.innerHTML += `
-                        <li class="process-item">
-                            <div class="process-info">
-                                <span class="process-pid">PID: ${proc.pid}</span>
-                                <span> | CPU: ${proc.cpu}% | MEM: ${proc.mem}%</span>
-                                <span> | Started: ${proc.started}</span>
-                            </div>
-                            <button class="button danger" onclick="killClaude(${proc.pid})">Kill</button>
-                        </li>
-                    `;
-                }
+                // Claude processes now shown in services
             }
             
             // Update system stats
@@ -492,60 +883,65 @@
                     `${system.memory?.used || '?'} / ${system.memory?.total || '?'}`;
                 document.getElementById('disk-usage').textContent = 
                     `${system.disk?.used || '?'} / ${system.disk?.total || '?'} (${system.disk?.percent || '?'})`;
+                document.getElementById('uptime').textContent = system.uptime || 'N/A';
             }
             
-            // Update services
-            const servicesList = document.getElementById('services-list');
-            servicesList.innerHTML = '';
-            if (currentData.services) {
-                for (const [service, status] of Object.entries(currentData.services)) {
-                    if (service !== 'docker' && service !== 'tmux_sessions') {
-                        const statusClass = status === 'active' ? 'success' : 'error';
-                        servicesList.innerHTML += `
-                            <div style="margin: 5px 0;">
-                                <span class="log-entry ${statusClass}">● ${service}: ${status}</span>
-                            </div>
-                        `;
-                    }
-                }
-            }
+            // Update services - call new monitoring functions
+            updateCriticalServices();
+            updateDockerContainers();
+            updateTmuxSessions();
+            updateSystemdServices();
+            updateDavyJonesStatus();
             
-            // Update changelogs
+            // Update changelogs with more compact display
             const changelogList = document.getElementById('changelog-list');
             changelogList.innerHTML = '';
             for (const log of currentData.changelogs || []) {
+                const area = log.work_area.replace('_', ' ').toUpperCase();
+                const timestamp = log.timestamp.split(' ')[1]; // Just time, not date
                 changelogList.innerHTML += `
-                    <div class="log-entry" onclick="viewLog('${log.filename}')">
-                        <strong>${log.work_area}</strong> - ${log.timestamp} (${log.size})
-                        <div style="color: #666; font-size: 11px;">${log.summary.substring(0, 100)}...</div>
+                    <div class="log-entry" onclick="viewLog('${log.filename}')" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span style="color: #00ff00;">[${area.substring(0, 8).padEnd(8, ' ')}]</span> 
+                        <span style="color: #999;">${timestamp}</span> 
+                        <span style="color: #fff;">${log.filename}</span> 
+                        <span style="color: #666;">(${log.size})</span>
                     </div>
                 `;
             }
             
-            // Update Claude outputs
+            // Update Claude outputs with compact display
             const claudeOutputList = document.getElementById('claude-output-list');
             claudeOutputList.innerHTML = '';
             for (const output of currentData.claude || []) {
                 const statusClass = output.status === 'completed' ? 'success' : 
                                    output.status === 'in_progress' ? 'warning' : 'error';
+                const statusSymbol = output.status === 'completed' ? 'OK' : 
+                                   output.status === 'in_progress' ? '..' : '!!';
+                const timestamp = output.timestamp.split(' ')[1]; // Just time
                 claudeOutputList.innerHTML += `
-                    <div class="log-entry ${statusClass}" onclick="viewLog('${output.filename}')">
-                        <strong>${output.work_type}</strong> - ${output.timestamp}
-                        <span> | Status: ${output.status} | Size: ${output.size}</span>
+                    <div class="log-entry ${statusClass}" onclick="viewLog('${output.filename}')" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span style="color: ${output.status === 'completed' ? '#0f0' : output.status === 'in_progress' ? '#ff0' : '#f00'};">[${statusSymbol}]</span>
+                        <span style="color: #999;">${timestamp}</span>
+                        <span style="color: #fff;">${output.filename}</span>
+                        <span style="color: #666;">${output.size}</span>
                     </div>
                 `;
             }
             
-            // Update security events
+            // Update security events with compact display
             const securityList = document.getElementById('security-list');
             securityList.innerHTML = '';
             for (const event of currentData.security || []) {
                 const levelClass = event.level === 'ERROR' ? 'error' : 
                                   event.level === 'WARNING' ? 'warning' : 'info';
+                const levelSymbol = event.level === 'ERROR' ? '!!' : 
+                                   event.level === 'WARNING' ? '?' : 'i';
+                const timestamp = event.timestamp.split(' ')[1] || event.timestamp; // Just time
                 securityList.innerHTML += `
-                    <div class="log-entry ${levelClass}">
-                        <strong>${event.timestamp}</strong> [${event.level}]
-                        <div>${event.message}</div>
+                    <div class="log-entry ${levelClass}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                        <span style="color: ${event.level === 'ERROR' ? '#f00' : event.level === 'WARNING' ? '#ff0' : '#999'};">[${levelSymbol}]</span>
+                        <span style="color: #666;">${timestamp}</span>
+                        <span style="color: #fff;">${event.message}</span>
                     </div>
                 `;
             }
@@ -553,12 +949,301 @@
             // Update recent logs
             const recentLogs = document.getElementById('recent-logs');
             recentLogs.innerHTML = '';
-            for (const log of barbossa?.recent_logs || []) {
-                recentLogs.innerHTML += `
-                    <div class="log-entry" onclick="viewLog('${log.name}')">
-                        <strong>${log.name}</strong> - ${log.modified} (${log.size})
+            if (barbossa?.recent_logs && Array.isArray(barbossa.recent_logs)) {
+                for (const log of barbossa.recent_logs) {
+                    const sizeInKB = parseFloat(log.size);
+                    const sizeColor = sizeInKB > 1000 ? '#ff0000' : sizeInKB > 100 ? '#ffff00' : '#00ff00';
+                    const modTime = log.modified.split(' ')[1]; // Just time
+                    recentLogs.innerHTML += `
+                        <div class="log-entry" onclick="viewLog('${log.name}')" style="cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                            <span style="color: #666;">${modTime}</span>
+                            <span style="color: #fff;">${log.name}</span>
+                            <span style="color: #666;">(${log.size})</span>
+                        </div>
+                    `;
+                }
+            } else {
+                recentLogs.innerHTML = '<div class="log-entry" style="color: #666666; text-align: center; padding: 10px; font-family: \'Courier New\', monospace; font-size: 11px;">[EMPTY] NO_LOGS_AVAILABLE</div>';
+            }
+        }
+
+        // New service monitoring functions
+        function updateCriticalServices() {
+            const servicesList = document.getElementById('services-list');
+            if (!servicesList) return;
+            
+            servicesList.innerHTML = '';
+            
+            // Define critical services to monitor
+            const criticalServices = [
+                { name: 'CLOUDFLARE_TUNNEL', check: 'cloudflared', type: 'process' },
+                { name: 'BARBOSSA_PORTAL', check: 'barbossa-portal', type: 'tmux' },
+                { name: 'DOCKER_DAEMON', check: 'docker', type: 'systemd' },
+                { name: 'REDIS_SERVER', check: 'redis', type: 'systemd' }
+            ];
+            
+            if (currentData.services) {
+                for (const service of criticalServices) {
+                    let status = 'inactive';
+                    let statusClass = 'error';
+                    let statusSymbol = '[!!]';
+                    
+                    if (service.type === 'systemd' && currentData.services.systemd) {
+                        const svcStatus = currentData.services.systemd[service.check];
+                        if (svcStatus) {
+                            status = typeof svcStatus === 'object' ? svcStatus.status : svcStatus;
+                        }
+                    } else if (service.type === 'process' && currentData.services.processes) {
+                        const processStatus = currentData.services.processes[service.check];
+                        if (processStatus && processStatus.status === 'active') {
+                            status = 'active';
+                        }
+                    } else if (service.type === 'tmux' && currentData.services.tmux_sessions) {
+                        const session = currentData.services.tmux_sessions.find(s => s.name === service.check);
+                        if (session) {
+                            status = 'active';
+                        }
+                    }
+                    
+                    statusClass = status === 'active' ? 'success' : 'error';
+                    statusSymbol = status === 'active' ? '[OK]' : '[!!]';
+                    
+                    servicesList.innerHTML += `
+                        <div style="margin: 2px 0; display: flex; align-items: center; font-size: 10px; font-family: 'Courier New', monospace;">
+                            <span class="service-status ${status === 'active' ? 'active' : 'inactive'}"></span>
+                            <span class="log-entry ${statusClass}">${statusSymbol} ${service.name.padEnd(20, '.')}: ${status.toUpperCase()}</span>
+                        </div>
+                    `;
+                }
+                
+                // Add Claude processes to services
+                if (currentData.status?.barbossa?.claude_processes && currentData.status.barbossa.claude_processes.length > 0) {
+                    servicesList.innerHTML += `<div style="margin: 5px 0; border-top: 1px solid #222; padding-top: 5px;"></div>`;
+                    for (const proc of currentData.status.barbossa.claude_processes) {
+                        servicesList.innerHTML += `
+                            <div style="margin: 2px 0; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: 'Courier New', monospace;">
+                                <span class="log-entry success">[PID:${proc.pid}] CLAUDE_PROCESS CPU:${proc.cpu}% MEM:${proc.mem}%</span>
+                                <button class="button danger" style="padding: 2px 6px; font-size: 9px;" onclick="killClaude(${proc.pid})">KILL</button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+        }
+        
+        function updateDockerContainers() {
+            const containerList = document.getElementById('docker-container-list');
+            if (!containerList) return;
+            
+            containerList.innerHTML = '';
+            let hasContainers = false;
+            
+            if (currentData.services?.docker) {
+                if (currentData.services.docker.error) {
+                    containerList.innerHTML = `<div class="log-entry error">[ERROR] ${currentData.services.docker.error}</div>`;
+                } else if (typeof currentData.services.docker === 'object') {
+                    for (const [container, info] of Object.entries(currentData.services.docker)) {
+                        if (typeof info === 'object' && info.status) {
+                            hasContainers = true;
+                            const statusClass = info.status === 'running' ? 'success' : 'warning';
+                            const statusSymbol = info.status === 'running' ? '[RUN]' : '[STOP]';
+                            const imageName = (info.image || 'unknown').split(':')[0].split('/').pop();
+                            containerList.innerHTML += `
+                                <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                                    ${statusSymbol} ${container.padEnd(25, '.')} ${imageName}
+                                    <div style="margin-left: 35px; color: #00aa00; font-size: 10px;">${info.full_status || ''}</div>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+                
+                if (!hasContainers) {
+                    containerList.innerHTML = `<div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">[EMPTY] No Docker containers found</div>`;
+                }
+            } else {
+                containerList.innerHTML = `<div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">[WAIT] Loading Docker status...</div>`;
+            }
+        }
+        
+        function updateTmuxSessions() {
+            const sessionList = document.getElementById('tmux-session-list');
+            if (!sessionList) return;
+            
+            sessionList.innerHTML = '';
+            
+            if (currentData.services?.tmux_sessions && Array.isArray(currentData.services.tmux_sessions) && currentData.services.tmux_sessions.length > 0) {
+                for (const session of currentData.services.tmux_sessions) {
+                    const statusClass = session.attached ? 'success' : 'warning';
+                    const statusSymbol = session.attached ? '[ATT]' : '[DET]';
+                    sessionList.innerHTML += `
+                        <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                            ${statusSymbol} ${session.name.padEnd(25, '.')} WIN:${session.windows} ${session.status.toUpperCase()}
+                        </div>
+                    `;
+                }
+            } else {
+                sessionList.innerHTML = `<div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">[EMPTY] No tmux sessions active</div>`;
+            }
+        }
+        
+        function updateSystemdServices() {
+            const serviceList = document.getElementById('systemd-service-list');
+            if (!serviceList) return;
+            
+            serviceList.innerHTML = '';
+            
+            if (currentData.services?.systemd && Object.keys(currentData.services.systemd).length > 0) {
+                const priorityServices = ['cloudflared', 'docker', 'redis'];
+                const sortedServices = [];
+                
+                // Add priority services first
+                for (const service of priorityServices) {
+                    if (currentData.services.systemd[service]) {
+                        sortedServices.push([service, currentData.services.systemd[service]]);
+                    }
+                }
+                
+                // Add other services
+                for (const [service, info] of Object.entries(currentData.services.systemd)) {
+                    if (!priorityServices.includes(service)) {
+                        sortedServices.push([service, info]);
+                    }
+                }
+                
+                // Display all services
+                for (const [service, info] of sortedServices) {
+                    const status = typeof info === 'object' ? info.status : info;
+                    const statusClass = status === 'active' ? 'success' : status === 'inactive' ? 'warning' : 'error';
+                    const statusSymbol = status === 'active' ? '[ACT]' : status === 'inactive' ? '[INACT]' : '[FAIL]';
+                    serviceList.innerHTML += `
+                        <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                            ${statusSymbol} ${service.padEnd(20, '.')} ${status.toUpperCase()}
+                        </div>
+                    `;
+                }
+            } else {
+                serviceList.innerHTML = `<div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">[WAIT] Loading systemd services...</div>`;
+            }
+        }
+        
+        function updateDavyJonesStatus() {
+            const davyStatus = document.getElementById('davy-status-info');
+            if (!davyStatus) return;
+            
+            davyStatus.innerHTML = '';
+            
+            // Check multiple sources for Davy Jones status
+            let isDavyRunning = false;
+            let davyDetails = {};
+            
+            // Check in Docker containers FIRST (most reliable)
+            if (currentData.services?.docker) {
+                for (const [container, info] of Object.entries(currentData.services.docker)) {
+                    if (container.toLowerCase().includes('davy') && info.status === 'running') {
+                        isDavyRunning = true;
+                        davyDetails.container = container;
+                        davyDetails.dockerStatus = info.full_status;
+                        break;
+                    }
+                }
+            }
+            
+            // Check in processes
+            if (!isDavyRunning && currentData.services?.processes) {
+                const davyProcess = currentData.services.processes['davy_jones_intern'] || 
+                                   currentData.services.processes['barbossa_portal'];
+                if (davyProcess && davyProcess.status === 'active') {
+                    isDavyRunning = true;
+                }
+            }
+            
+            // Check in tmux sessions
+            if (!isDavyRunning && currentData.services?.tmux_sessions) {
+                const davySession = currentData.services.tmux_sessions.find(s => 
+                    s.name.includes('davy') || s.name.includes('jones'));
+                if (davySession) {
+                    isDavyRunning = true;
+                    davyDetails.session = davySession.name;
+                    davyDetails.attached = davySession.attached;
+                }
+            }
+            
+            // Status display
+            davyStatus.innerHTML = `
+                <div class="log-entry ${isDavyRunning ? 'success' : 'error'}" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                    [STATUS] BOT_SERVICE...................${isDavyRunning ? 'ONLINE' : 'OFFLINE'}
+                </div>
+            `;
+            
+            if (davyDetails.container) {
+                davyStatus.innerHTML += `
+                    <div class="log-entry success" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                        [DOCKER] ${davyDetails.container}
+                    </div>
+                    <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 10px; margin-left: 30px;">
+                        ${davyDetails.dockerStatus || 'Running'}
                     </div>
                 `;
+            }
+            
+            if (davyDetails.session) {
+                davyStatus.innerHTML += `
+                    <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                        [SESSION] ${davyDetails.session} (${davyDetails.attached ? 'ATTACHED' : 'DETACHED'})
+                    </div>
+                `;
+            }
+            
+            // Add webhook endpoints
+            davyStatus.innerHTML += `
+                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                    [WEBHOOK] webhook.eastindiaonchaincompany.xyz
+                </div>
+                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                    [API_URL] api.eastindiaonchaincompany.xyz
+                </div>
+            `;
+            
+            // Add project path
+            davyStatus.innerHTML += `
+                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                    [PROJECT] ~/barbossa-engineer/projects/davy-jones-intern
+                </div>
+            `;
+            
+            // Add recent activity if available
+            if (currentData.changelogs) {
+                const davyChangelogs = currentData.changelogs.filter(log => 
+                    log.work_area === 'davy_jones' || log.filename.includes('davy'));
+                if (davyChangelogs.length > 0) {
+                    const recent = davyChangelogs[0];
+                    davyStatus.innerHTML += `
+                        <div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">
+                            [LAST_WORK] ${recent.timestamp}
+                        </div>
+                    `;
+                }
+            }
+        }
+        
+        function switchServiceTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('#service-monitor-tabs .tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.target.classList.add('active');
+            
+            // Hide all service tabs
+            document.querySelectorAll('.service-tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            
+            // Show selected tab
+            const selectedTab = document.getElementById(`${tabName}-services`);
+            if (selectedTab) {
+                selectedTab.style.display = 'block';
+                selectedTab.classList.add('active');
             }
         }
         
@@ -581,7 +1266,7 @@
                 alert(`❌ Error: ${error.message}`);
             }
         }
-        
+
         async function killClaude(pid) {
             if (!confirm(`Kill Claude process ${pid}?`)) return;
             
@@ -598,7 +1283,7 @@
                 alert(`❌ Error: ${error.message}`);
             }
         }
-        
+
         async function clearLogs(days) {
             if (!confirm(`Archive and clear logs older than ${days} days?`)) return;
             
@@ -615,25 +1300,36 @@
                 alert(`❌ Error: ${error.message}`);
             }
         }
-        
+
         async function viewLog(filename) {
-            document.getElementById('logModal').style.display = 'block';
+            const modal = document.getElementById('logModal');
+            const modalContent = document.getElementById('modal-content');
+            
+            modal.style.display = 'block';
             document.getElementById('modal-title').textContent = `Log: ${filename}`;
-            document.getElementById('modal-content').textContent = 'Loading...';
+            modalContent.innerHTML = '<div style="color: #ffff00; text-align: center; padding: 20px;">Loading...</div>';
             
             try {
                 const response = await fetch(`/api/log/${filename}`);
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 const data = await response.json();
-                document.getElementById('modal-content').textContent = data.content || data.error;
+                
+                if (data.error) {
+                    modalContent.innerHTML = `<div style="color: #ff0000;">Error: ${data.error}</div>`;
+                } else {
+                    modalContent.innerHTML = `<div class="modal-log-content">${data.content || 'No content'}</div>`;
+                }
             } catch (error) {
-                document.getElementById('modal-content').textContent = `Error: ${error.message}`;
+                modalContent.innerHTML = `<div style="color: #ff0000;">Error loading log: ${error.message}</div>`;
             }
         }
-        
+
         function closeModal() {
             document.getElementById('logModal').style.display = 'none';
         }
-        
+
         function switchTab(tabName) {
             document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
             document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
@@ -641,27 +1337,43 @@
             event.target.classList.add('active');
             document.getElementById(tabName).classList.add('active');
         }
-        
+
         function refreshStatus() {
             fetchData();
         }
-        
+
         function searchLogs() {
             const search = document.getElementById('log-search').value.toLowerCase();
             const entries = document.querySelectorAll('#recent-logs .log-entry');
+            let visibleCount = 0;
+            
             entries.forEach(entry => {
                 const text = entry.textContent.toLowerCase();
-                entry.style.display = text.includes(search) ? 'block' : 'none';
+                if (text.includes(search) || search === '') {
+                    entry.style.display = 'block';
+                    visibleCount++;
+                } else {
+                    entry.style.display = 'none';
+                }
             });
+            
+            // Show search results count
+            if (search && visibleCount === 0) {
+                const searchResult = document.createElement('div');
+                searchResult.className = 'log-entry';
+                searchResult.style.color = '#888';
+                searchResult.textContent = `No logs found matching "${search}"`;
+                document.getElementById('recent-logs').appendChild(searchResult);
+            }
         }
-        
+
         function showArchiveDialog() {
             const days = prompt('Archive logs older than how many days?', '7');
             if (days && !isNaN(days)) {
                 clearLogs(parseInt(days));
             }
         }
-        
+
         function viewFullLogs() {
             // Create a comprehensive log viewer modal
             const modal = document.getElementById('logModal');
@@ -675,28 +1387,28 @@
             // Add Barbossa logs
             logContent += '<div><strong>📝 Barbossa Logs:</strong><br>';
             for (const log of currentData.status?.barbossa?.recent_logs || []) {
-                logContent += `<a href="#" onclick="viewLog('${log.name}'); return false;" style="color: #00ffcc;">• ${log.name}</a><br>`;
+                logContent += `<a href="#" onclick="viewLog('${log.name}'); return false;" style="color: #00ff00;">• ${log.name}</a><br>`;
             }
             logContent += '</div>';
             
             // Add Claude outputs
             logContent += '<div><strong>🤖 Claude Outputs:</strong><br>';
             for (const output of currentData.claude || []) {
-                logContent += `<a href="#" onclick="viewLog('${output.filename}'); return false;" style="color: #00ffcc;">• ${output.filename}</a><br>`;
+                logContent += `<a href="#" onclick="viewLog('${output.filename}'); return false;" style="color: #00ff00;">• ${output.filename}</a><br>`;
             }
             logContent += '</div>';
             
             // Add Changelogs
             logContent += '<div><strong>📜 Recent Changelogs:</strong><br>';
             for (const log of currentData.changelogs?.slice(0, 10) || []) {
-                logContent += `<a href="#" onclick="viewLog('${log.filename}'); return false;" style="color: #00ffcc;">• ${log.filename}</a><br>`;
+                logContent += `<a href="#" onclick="viewLog('${log.filename}'); return false;" style="color: #00ff00;">• ${log.filename}</a><br>`;
             }
             logContent += '</div>';
             
             // Add Security logs
             logContent += '<div><strong>🔒 Security Logs:</strong><br>';
-            logContent += `<a href="#" onclick="viewLog('audit.log'); return false;" style="color: #00ffcc;">• audit.log</a><br>`;
-            logContent += `<a href="#" onclick="viewLog('security_violations.log'); return false;" style="color: #00ffcc;">• security_violations.log</a><br>`;
+            logContent += `<a href="#" onclick="viewLog('audit.log'); return false;" style="color: #00ff00;">• audit.log</a><br>`;
+            logContent += `<a href="#" onclick="viewLog('security_violations.log'); return false;" style="color: #00ff00;">• security_violations.log</a><br>`;
             logContent += '</div>';
             
             logContent += '</div>';
@@ -707,18 +1419,45 @@
             
             document.getElementById('modal-content').innerHTML = logContent;
         }
-        
-        // Update time
+
+        // Update time and system status
         setInterval(() => {
             const now = new Date();
             document.getElementById('system-time').textContent = 
                 now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
+                
+            // Update portal status indicator
+            const portalStatus = document.getElementById('portal-status');
+            if (portalStatus) {
+                portalStatus.className = 'status-badge status-online';
+                portalStatus.textContent = 'Portal Online';
+            }
         }, 1000);
+
+        // Initial load and auto-refresh with better error handling
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initial load
+            fetchData();
+            
+            // Auto-refresh every 30 seconds
+            setInterval(() => {
+                try {
+                    fetchData();
+                } catch (error) {
+                    console.warn('Auto-refresh failed:', error);
+                }
+            }, 30000);
+        });
         
-        // Initial load and auto-refresh
-        fetchData();
-        setInterval(fetchData, 30000); // Refresh every 30 seconds
-        
+        // Load immediately if DOM already ready
+        if (document.readyState === 'loading') {
+            // DOM still loading, wait for it
+        } else {
+            // DOM ready
+            fetchData();
+            setInterval(fetchData, 30000);
+        }
+
         // Close modal on click outside
         window.onclick = function(event) {
             const modal = document.getElementById('logModal');
@@ -726,6 +1465,7 @@
                 modal.style.display = 'none';
             }
         }
+
     </script>
 </body>
 </html>
