@@ -212,28 +212,33 @@ Complete the task fully and report what was accomplished."""
         with open(prompt_file, 'w') as f:
             f.write(prompt)
         
-        # Execute with Claude CLI
+        # Execute with Claude CLI in background
         self.logger.info("Calling Claude CLI for infrastructure work...")
-        result = subprocess.run(
-            f"claude --dangerously-skip-permissions < {prompt_file}",
-            shell=True,
-            capture_output=True,
-            text=True,
-            cwd=self.work_dir
-        )
         
-        # Save output as changelog
+        # Create output file for Claude's results
+        output_file = self.logs_dir / f"claude_infrastructure_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        
+        # Launch Claude in background, redirecting output to file
+        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
+        
+        self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
+        
+        # Save initial changelog noting the task was started
         changelog = []
         changelog.append(f"# Infrastructure Improvements - {datetime.now().isoformat()}\n")
-        changelog.append("## Claude Execution Output\n")
-        changelog.append(f"```\n{result.stdout}\n```\n")
-        if result.stderr:
-            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
+        changelog.append("## Task Started\n")
+        changelog.append(f"Claude CLI launched in background for infrastructure improvements.\n")
+        changelog.append(f"Output file: {output_file}\n")
+        changelog.append(f"Prompt file: {prompt_file}\n")
+        changelog.append("\n### Selected Tasks:\n")
+        changelog.append("- Check and update system packages\n")
+        changelog.append("- Review security configurations\n")
+        changelog.append("- Optimize Docker containers\n")
+        changelog.append("- Clean up large log files\n")
+        changelog.append("- Update project dependencies\n")
         
         self._save_changelog('infrastructure', changelog)
-        
-        # Clean up prompt file
-        prompt_file.unlink(missing_ok=True)
         
         self.logger.info("Infrastructure improvements completed")
     
@@ -297,29 +302,34 @@ Complete the task fully and create a PR for review."""
         with open(prompt_file, 'w') as f:
             f.write(prompt)
         
-        # Execute with Claude CLI
+        # Execute with Claude CLI in background
         self.logger.info("Calling Claude CLI for personal project work...")
-        result = subprocess.run(
-            f"claude --dangerously-skip-permissions < {prompt_file}",
-            shell=True,
-            capture_output=True,
-            text=True,
-            cwd=self.work_dir
-        )
         
-        # Save output as changelog
+        # Create output file for Claude's results
+        output_file = self.logs_dir / f"claude_personal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        
+        # Launch Claude in background
+        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
+        
+        self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
+        
+        # Save initial changelog
         changelog = []
         changelog.append(f"# Personal Project Development - {datetime.now().isoformat()}\n")
         changelog.append(f"## Repository: {selected_repo}\n")
-        changelog.append("## Claude Execution Output\n")
-        changelog.append(f"```\n{result.stdout}\n```\n")
-        if result.stderr:
-            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
+        changelog.append("## Task Started\n")
+        changelog.append(f"Claude CLI launched in background for repository improvements.\n")
+        changelog.append(f"Output file: {output_file}\n")
+        changelog.append(f"Repository URL: {repo_url}\n")
+        changelog.append("\n### Potential Improvements:\n")
+        changelog.append("- Add missing tests\n")
+        changelog.append("- Refactor complex code\n")
+        changelog.append("- Fix bugs\n")
+        changelog.append("- Add documentation\n")
+        changelog.append("- Improve error handling\n")
         
         self._save_changelog('personal_projects', changelog)
-        
-        # Clean up prompt file
-        prompt_file.unlink(missing_ok=True)
         
         self.logger.info("Personal project development completed")
     
@@ -384,29 +394,34 @@ Complete the improvement and create a PR for manual review."""
         with open(prompt_file, 'w') as f:
             f.write(prompt)
         
-        # Execute with Claude CLI
+        # Execute with Claude CLI in background
         self.logger.info("Calling Claude CLI for Davy Jones development...")
-        result = subprocess.run(
-            f"claude --dangerously-skip-permissions < {prompt_file}",
-            shell=True,
-            capture_output=True,
-            text=True,
-            cwd=self.work_dir
-        )
         
-        # Save output as changelog
+        # Create output file for Claude's results
+        output_file = self.logs_dir / f"claude_davy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
+        
+        # Launch Claude in background
+        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
+        
+        self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
+        
+        # Save initial changelog
         changelog = []
         changelog.append(f"# Davy Jones Intern Development - {datetime.now().isoformat()}\n")
         changelog.append("## ⚠️ PRODUCTION SAFETY: Development only, no deployment\n")
-        changelog.append("## Claude Execution Output\n")
-        changelog.append(f"```\n{result.stdout}\n```\n")
-        if result.stderr:
-            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
+        changelog.append("## Task Started\n")
+        changelog.append(f"Claude CLI launched in background for Davy Jones improvements.\n")
+        changelog.append(f"Output file: {output_file}\n")
+        changelog.append(f"Repository: {repo_url}\n")
+        changelog.append("\n### Potential Improvements:\n")
+        changelog.append("- Add comprehensive tests\n")
+        changelog.append("- Improve error handling\n")
+        changelog.append("- Refactor for maintainability\n")
+        changelog.append("- Better logging capabilities\n")
+        changelog.append("- Optimize bot performance\n")
         
         self._save_changelog('davy_jones', changelog)
-        
-        # Clean up prompt file
-        prompt_file.unlink(missing_ok=True)
         
         self.logger.info("Davy Jones development completed (no production changes)")
     
