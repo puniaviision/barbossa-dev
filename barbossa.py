@@ -173,52 +173,72 @@ class Barbossa:
             f.write("-" * 40 + "\n")
     
     def execute_infrastructure_improvements(self):
-        """Execute server infrastructure improvement tasks"""
+        """Execute server infrastructure improvement tasks using Claude CLI"""
         self.logger.info("Executing infrastructure improvements...")
         
+        # Create prompt for Claude
+        prompt = f"""You are Barbossa, an autonomous software engineer working on server infrastructure.
+
+CRITICAL SECURITY RULE: You must NEVER access, clone, modify, or interact with ANY repositories under the Z-K-P-2-P organizations. This is strictly forbidden.
+        
+Your task is to improve the server infrastructure at {Path.home()}. Choose ONE of these tasks and execute it completely:
+
+1. Check and update system packages (apt update, upgrade safe packages)
+2. Review and improve security configurations (UFW rules, SSH settings)
+3. Optimize Docker containers (prune unused images, check resource usage)
+4. Clean up large log files (find and rotate/compress logs over 100MB)
+5. Update project dependencies (check npm/pip packages for security updates)
+
+IMPORTANT:
+- Execute REAL commands and make ACTUAL improvements
+- Be careful with system-critical operations
+- Document what you did in detail
+- Run appropriate test commands to verify your work
+- Create a detailed changelog of your actions
+
+System Info:
+- OS: Ubuntu 24.04 LTS
+- User: {os.getenv('USER')}
+- Home: {Path.home()}
+- Server IP: 192.168.1.138
+
+Available tools: apt, docker, npm, pip, systemctl, ufw, git
+You have sudo access with password: Ableton6242
+
+Complete the task fully and report what was accomplished."""
+
+        # Save prompt to file
+        prompt_file = self.work_dir / 'temp_prompt.txt'
+        with open(prompt_file, 'w') as f:
+            f.write(prompt)
+        
+        # Execute with Claude CLI
+        self.logger.info("Calling Claude CLI for infrastructure work...")
+        result = subprocess.run(
+            f"claude --dangerously-skip-permissions < {prompt_file}",
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=self.work_dir
+        )
+        
+        # Save output as changelog
         changelog = []
         changelog.append(f"# Infrastructure Improvements - {datetime.now().isoformat()}\n")
+        changelog.append("## Claude Execution Output\n")
+        changelog.append(f"```\n{result.stdout}\n```\n")
+        if result.stderr:
+            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
         
-        tasks = [
-            "Check and update system packages",
-            "Review security configurations",
-            "Optimize Docker containers",
-            "Clean up log files",
-            "Update Barbossa dependencies"
-        ]
-        
-        selected_task = random.choice(tasks)
-        self.logger.info(f"Selected task: {selected_task}")
-        changelog.append(f"## Task: {selected_task}\n")
-        
-        # Simulate task execution (in production, this would run actual commands)
-        if selected_task == "Check and update system packages":
-            # Check for updates (read-only)
-            result = subprocess.run(
-                ["apt", "list", "--upgradable"],
-                capture_output=True,
-                text=True
-            )
-            changelog.append(f"### Package check results:\n```\n{result.stdout[:500]}\n```\n")
-        
-        elif selected_task == "Clean up log files":
-            # Find large log files
-            result = subprocess.run(
-                ["find", str(Path.home()), "-name", "*.log", "-size", "+10M", "-type", "f"],
-                capture_output=True,
-                text=True
-            )
-            if result.stdout:
-                changelog.append(f"### Large log files found:\n```\n{result.stdout[:500]}\n```\n")
-            else:
-                changelog.append("### No large log files found\n")
-        
-        # Save changelog
         self._save_changelog('infrastructure', changelog)
+        
+        # Clean up prompt file
+        prompt_file.unlink(missing_ok=True)
+        
         self.logger.info("Infrastructure improvements completed")
     
     def execute_personal_project_development(self):
-        """Execute personal project feature development"""
+        """Execute personal project feature development using Claude CLI"""
         self.logger.info("Executing personal project development...")
         
         # Select a repository
@@ -232,48 +252,79 @@ class Barbossa:
             self.logger.error("Repository access denied by security guard")
             return
         
+        self.logger.info(f"Working on repository: {selected_repo}")
+        
+        # Create prompt for Claude
+        prompt = f"""You are Barbossa, an autonomous software engineer working on personal projects.
+
+CRITICAL SECURITY RULE: You must NEVER access, clone, modify, or interact with ANY repositories under the Z-K-P-2-P organizations. Only work on ADWilkinson repositories.
+
+Your task is to improve the repository: {selected_repo}
+
+Repository URL: {repo_url}
+
+INSTRUCTIONS:
+1. Clone or update the repository to ~/barbossa-engineer/projects/
+2. Analyze the codebase thoroughly
+3. Choose ONE meaningful improvement:
+   - Add missing tests for critical functions
+   - Refactor complex code for better readability
+   - Fix any obvious bugs or issues
+   - Add missing documentation
+   - Improve error handling
+   - Optimize performance bottlenecks
+   - Update outdated dependencies (if safe)
+
+4. Implement the improvement completely
+5. If the project has build/test scripts, run them (check package.json or README)
+6. Create a new branch for your changes
+7. Commit with a clear message
+8. Create a PR to the main branch
+
+IMPORTANT:
+- Make REAL, meaningful improvements to the code
+- If tests exist, ensure they pass before committing
+- Write clean, well-documented code
+- Follow the project's existing code style
+- Create a detailed PR description
+
+GitHub is configured with token access. You can push branches and create PRs.
+
+Complete the task fully and create a PR for review."""
+
+        # Save prompt to file
+        prompt_file = self.work_dir / 'temp_prompt.txt'
+        with open(prompt_file, 'w') as f:
+            f.write(prompt)
+        
+        # Execute with Claude CLI
+        self.logger.info("Calling Claude CLI for personal project work...")
+        result = subprocess.run(
+            f"claude --dangerously-skip-permissions < {prompt_file}",
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=self.work_dir
+        )
+        
+        # Save output as changelog
         changelog = []
         changelog.append(f"# Personal Project Development - {datetime.now().isoformat()}\n")
         changelog.append(f"## Repository: {selected_repo}\n")
+        changelog.append("## Claude Execution Output\n")
+        changelog.append(f"```\n{result.stdout}\n```\n")
+        if result.stderr:
+            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
         
-        # Clone or update repository
-        repo_name = selected_repo.split('/')[-1]
-        repo_path = self.work_dir / 'projects' / repo_name
-        
-        if repo_path.exists():
-            self.logger.info(f"Updating existing repository: {repo_path}")
-            # Pull latest changes
-            result = subprocess.run(
-                ["git", "pull", "origin", "main"],
-                cwd=repo_path,
-                capture_output=True,
-                text=True
-            )
-            changelog.append(f"### Repository updated\n```\n{result.stdout}\n```\n")
-        else:
-            self.logger.info(f"Cloning repository: {repo_url}")
-            repo_path.parent.mkdir(parents=True, exist_ok=True)
-            result = subprocess.run(
-                ["git", "clone", repo_url, str(repo_path)],
-                capture_output=True,
-                text=True
-            )
-            changelog.append(f"### Repository cloned\n```\n{result.stdout}\n```\n")
-        
-        # Analyze repository for improvements
-        changelog.append("### Analysis Tasks:\n")
-        changelog.append("- [ ] Check for outdated dependencies\n")
-        changelog.append("- [ ] Review code structure\n")
-        changelog.append("- [ ] Identify refactoring opportunities\n")
-        changelog.append("- [ ] Look for missing tests\n")
-        changelog.append("- [ ] Check documentation completeness\n")
-        
-        # Save changelog
         self._save_changelog('personal_projects', changelog)
+        
+        # Clean up prompt file
+        prompt_file.unlink(missing_ok=True)
+        
         self.logger.info("Personal project development completed")
     
     def execute_davy_jones_development(self):
-        """Execute Davy Jones Intern development (without affecting production)"""
+        """Execute Davy Jones Intern development using Claude CLI (without affecting production)"""
         self.logger.info("Executing Davy Jones Intern development...")
         self.logger.warning("REMINDER: Do not redeploy or affect production instance!")
         
@@ -284,43 +335,79 @@ class Barbossa:
             self.logger.error("Repository access denied by security guard")
             return
         
+        # Create prompt for Claude
+        prompt = f"""You are Barbossa, an autonomous software engineer working on the Davy Jones Intern bot.
+
+CRITICAL SECURITY RULE: You must NEVER access, clone, modify, or interact with ANY repositories under the Z-K-P-2-P organizations. Only work on ADWilkinson/davy-jones-intern.
+
+CRITICAL WARNING: The bot is currently RUNNING IN PRODUCTION. DO NOT:
+- Stop or restart the production service
+- Run docker-compose down or docker-compose restart
+- Modify any running containers
+- Change production configuration files
+- Deploy or redeploy anything
+
+Your task is to improve the Davy Jones Intern codebase at: {repo_url}
+
+SAFE INSTRUCTIONS:
+1. Clone or update the repository to ~/barbossa-engineer/projects/davy-jones-intern
+2. Analyze the codebase for improvements
+3. Choose ONE meaningful improvement:
+   - Add comprehensive tests for untested functions
+   - Improve error handling and resilience
+   - Refactor complex code for maintainability
+   - Add better logging and debugging capabilities
+   - Optimize performance in bot responses
+   - Enhance Slack interaction features
+   - Improve Claude integration efficiency
+
+4. Implement the improvement in a NEW FEATURE BRANCH
+5. If available, run tests and linting (check package.json for scripts)
+6. Verify your changes work correctly
+7. Create a detailed PR to main branch for review
+
+PRODUCTION SAFETY:
+- Work ONLY in the cloned repository at ~/barbossa-engineer/projects/
+- Do NOT touch the running Docker container (davy-jones-intern)
+- Do NOT modify .env files in the production directory ~/projects/davy-jones-intern
+- Create all changes in a feature branch
+- The PR will be manually reviewed before any production deployment
+
+The bot is accessible at https://webhook.eastindiaonchaincompany.xyz
+Current production directory: ~/projects/davy-jones-intern (DO NOT MODIFY)
+Your work directory: ~/barbossa-engineer/projects/davy-jones-intern
+
+Complete the improvement and create a PR for manual review."""
+
+        # Save prompt to file
+        prompt_file = self.work_dir / 'temp_prompt.txt'
+        with open(prompt_file, 'w') as f:
+            f.write(prompt)
+        
+        # Execute with Claude CLI
+        self.logger.info("Calling Claude CLI for Davy Jones development...")
+        result = subprocess.run(
+            f"claude --dangerously-skip-permissions < {prompt_file}",
+            shell=True,
+            capture_output=True,
+            text=True,
+            cwd=self.work_dir
+        )
+        
+        # Save output as changelog
         changelog = []
         changelog.append(f"# Davy Jones Intern Development - {datetime.now().isoformat()}\n")
-        changelog.append("## ⚠️ PRODUCTION SAFETY: No deployment, only feature development\n")
+        changelog.append("## ⚠️ PRODUCTION SAFETY: Development only, no deployment\n")
+        changelog.append("## Claude Execution Output\n")
+        changelog.append(f"```\n{result.stdout}\n```\n")
+        if result.stderr:
+            changelog.append(f"### Errors:\n```\n{result.stderr}\n```\n")
         
-        # Work with repository
-        repo_path = self.work_dir / 'projects' / 'davy-jones-intern'
-        
-        if repo_path.exists():
-            # Update repository
-            result = subprocess.run(
-                ["git", "pull", "origin", "main"],
-                cwd=repo_path,
-                capture_output=True,
-                text=True
-            )
-            changelog.append(f"### Repository updated\n```\n{result.stdout}\n```\n")
-        else:
-            # Clone repository
-            repo_path.parent.mkdir(parents=True, exist_ok=True)
-            result = subprocess.run(
-                ["git", "clone", repo_url, str(repo_path)],
-                capture_output=True,
-                text=True
-            )
-            changelog.append(f"### Repository cloned\n```\n{result.stdout}\n```\n")
-        
-        # Development tasks (safe, non-production affecting)
-        changelog.append("### Development Tasks:\n")
-        changelog.append("- [ ] Review code for optimization opportunities\n")
-        changelog.append("- [ ] Add unit tests for uncovered functions\n")
-        changelog.append("- [ ] Improve error handling\n")
-        changelog.append("- [ ] Enhance logging capabilities\n")
-        changelog.append("- [ ] Document new features\n")
-        changelog.append("- [ ] Create feature branch for improvements\n")
-        
-        # Save changelog
         self._save_changelog('davy_jones', changelog)
+        
+        # Clean up prompt file
+        prompt_file.unlink(missing_ok=True)
+        
         self.logger.info("Davy Jones development completed (no production changes)")
     
     def _save_changelog(self, area: str, content: List[str]):
