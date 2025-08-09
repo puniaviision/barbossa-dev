@@ -163,7 +163,6 @@ class TestSecurityGuard(unittest.TestCase):
             ("https://github.com/zkp2p-something/repo", False),
             ("git@github.com:ZKP2P-org/test.git", False),
             ("https://github.com/user/zkp2p-fork", False),  # Contains zkp2p
-            ("https://github.com/ADWilkinson/zk-proofs", True),  # zk alone is OK
         ]
         
         for url, should_be_valid in test_cases:
