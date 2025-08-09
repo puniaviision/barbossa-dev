@@ -38,9 +38,13 @@ class Barbossa:
                 'ADWilkinson/_save',
                 'ADWilkinson/chordcraft-app',
                 'ADWilkinson/piggyonchain',
-                'ADWilkinson/persona-website',
-                'ADWilkinson/saylor-memes',
-                'ADWilkinson/the-flying-dutchman-theme'
+                'ADWilkinson/personal-website',  # Fixed: was persona-website
+                'ADWilkinson/adw',  # Added: actual personal website
+                'ADWilkinson/saylormemes',  # Fixed: was saylor-memes
+                'ADWilkinson/the-flying-dutchman-theme',
+                'ADWilkinson/piano-quest',  # Added: React Native piano app
+                'ADWilkinson/ultrasoundapps',  # Added: trading homepage
+                'ADWilkinson/privateer-capital'  # Added: trading bot
             ],
             'weight': 2.0
         },
