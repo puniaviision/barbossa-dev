@@ -2,7 +2,7 @@
 # Sets up cron job for Barbossa execution every 4 hours
 
 BARBOSSA_DIR="/home/dappnode/barbossa-engineer"
-CLAUDE_CMD="claude --dangerously-skip-permissions"
+CLAUDE_CMD="claude --dangerously-skip-permissions --model sonnet"
 
 # Create the cron execution script
 cat > $BARBOSSA_DIR/run_barbossa.sh << 'SCRIPT'
@@ -34,7 +34,7 @@ sed -e "s/{DATE}/$DATE/g" \
     barbossa_prompt.txt > /tmp/barbossa_prompt_$SESSION_ID.txt
 
 # Execute with Claude
-claude --dangerously-skip-permissions < /tmp/barbossa_prompt_$SESSION_ID.txt >> $LOG_FILE 2>&1
+claude --dangerously-skip-permissions --model sonnet < /tmp/barbossa_prompt_$SESSION_ID.txt >> $LOG_FILE 2>&1
 
 # Clean up
 rm /tmp/barbossa_prompt_$SESSION_ID.txt

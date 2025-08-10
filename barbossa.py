@@ -281,7 +281,7 @@ Complete the task and report results."""
         
         output_file = self.logs_dir / f"claude_infrastructure_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Infrastructure management launched. Output: {output_file}")
@@ -344,7 +344,7 @@ Complete the improvement and create a detailed report."""
         
         output_file = self.logs_dir / f"claude_self_improvement_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Self-improvement launched for: {selected_task}")
@@ -412,7 +412,7 @@ Complete the task and create a PR."""
         
         output_file = self.logs_dir / f"claude_personal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Personal project development launched for: {selected_repo}")
@@ -471,7 +471,7 @@ Select and implement ONE improvement completely."""
         
         output_file = self.logs_dir / f"claude_davy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info("Davy Jones development launched")

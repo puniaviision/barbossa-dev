@@ -26,7 +26,7 @@ sed -e "s/{DATE}/$DATE/g" \
     barbossa_prompt.txt > /tmp/barbossa_prompt_$SESSION_ID.txt
 
 # Execute with Claude
-claude --dangerously-skip-permissions < /tmp/barbossa_prompt_$SESSION_ID.txt >> $LOG_FILE 2>&1
+claude --dangerously-skip-permissions --model sonnet < /tmp/barbossa_prompt_$SESSION_ID.txt >> $LOG_FILE 2>&1
 
 # Clean up
 rm /tmp/barbossa_prompt_$SESSION_ID.txt

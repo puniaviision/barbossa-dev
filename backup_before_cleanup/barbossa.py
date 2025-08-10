@@ -219,7 +219,7 @@ Complete the task fully and report what was accomplished."""
         output_file = self.logs_dir / f"claude_infrastructure_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
         # Launch Claude in background, redirecting output to file
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
@@ -309,7 +309,7 @@ Complete the task fully and create a PR for review."""
         output_file = self.logs_dir / f"claude_personal_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
         # Launch Claude in background
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
@@ -401,7 +401,7 @@ Complete the improvement and create a PR for manual review."""
         output_file = self.logs_dir / f"claude_davy_{datetime.now().strftime('%Y%m%d_%H%M%S')}.log"
         
         # Launch Claude in background
-        cmd = f"nohup claude --dangerously-skip-permissions < {prompt_file} > {output_file} 2>&1 &"
+        cmd = f"nohup claude --dangerously-skip-permissions --model sonnet < {prompt_file} > {output_file} 2>&1 &"
         subprocess.Popen(cmd, shell=True, cwd=self.work_dir)
         
         self.logger.info(f"Claude launched in background. Output will be saved to: {output_file}")
