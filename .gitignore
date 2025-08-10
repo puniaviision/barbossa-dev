@@ -49,4 +49,4 @@ web_portal/build/
 web_portal/dist/
 
 # Projects folder - managed by bot, not committed
-projects/
+projects/metrics.db
