@@ -797,6 +797,66 @@
                 </div>
             </div>
         </div>
+        <!-- Enhanced System Metrics Card - Full Width -->
+        <div class="card" style="grid-column: span 2;">
+            <h2>SYSTEM_METRICS</h2>
+            <div class="stats-grid" style="grid-template-columns: repeat(6, 1fr);">
+                <div class="stat-box">
+                    <div class="value" id="enhanced-cpu">-</div>
+                    <div class="label">CPU</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="enhanced-memory">-</div>
+                    <div class="label">MEMORY</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="enhanced-disk">-</div>
+                    <div class="label">DISK</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="network-io">-</div>
+                    <div class="label">NETWORK</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="load-avg">-</div>
+                    <div class="label">LOAD</div>
+                </div>
+                <div class="stat-box">
+                    <div class="value" id="processes">-</div>
+                    <div class="label">PROCS</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Network Monitoring Card -->
+        <div class="card">
+            <h2>NETWORK_STATUS</h2>
+            <h3 style="color: #00ff00; font-size: 11px; margin: 10px 0 5px 0;">OPEN_PORTS</h3>
+            <div id="open-ports" class="log-viewer" style="height: 150px; font-size: 10px;">
+                <!-- Ports populated by JS -->
+            </div>
+            <h3 style="color: #00ff00; font-size: 11px; margin: 10px 0 5px 0;">CONNECTIONS</h3>
+            <div id="active-connections" class="log-viewer" style="height: 100px; font-size: 10px;">
+                <!-- Connections populated by JS -->
+            </div>
+        </div>
+
+        <!-- Git Projects Status Card -->
+        <div class="card">
+            <h2>GIT_PROJECTS</h2>
+            <div id="projects-overview" class="log-viewer" style="height: 280px;">
+                <!-- Projects populated by JS -->
+            </div>
+        </div>
+
+        <!-- System Alerts Card - Full Width (only shows when alerts exist) -->
+        <div class="card" id="alerts-section" style="grid-column: span 2; display: none;">
+            <h2 style="color: #ff0000;">SYSTEM_ALERTS</h2>
+            <div id="alerts-container" class="log-viewer" style="height: 150px;">
+                <!-- Alerts populated by JS -->
+            </div>
+        </div>
+
     </div>
 
     
@@ -821,11 +881,14 @@
                     fetch('/api/changelogs').then(r => r.ok ? r.json() : Promise.reject(`Changelogs API failed: ${r.status}`)),
                     fetch('/api/security').then(r => r.ok ? r.json() : Promise.reject(`Security API failed: ${r.status}`)),
                     fetch('/api/claude').then(r => r.ok ? r.json() : Promise.reject(`Claude API failed: ${r.status}`)),
-                    fetch('/api/services').then(r => r.ok ? r.json() : Promise.reject(`Services API failed: ${r.status}`))
+                    fetch('/api/services').then(r => r.ok ? r.json() : Promise.reject(`Services API failed: ${r.status}`)),
+                    fetch('/api/comprehensive-status').then(r => r.ok ? r.json() : null),
+                    fetch('/api/network-status').then(r => r.ok ? r.json() : null),
+                    fetch('/api/projects').then(r => r.ok ? r.json() : null)
                 ]);
                 
                 // Process responses with fallbacks
-                const [status, changelogs, security, claude, services] = responses.map((response, index) => {
+                const [status, changelogs, security, claude, services, comprehensive, network, projects] = responses.map((response, index) => {
                     if (response.status === 'fulfilled') {
                         return response.value;
                     } else {
@@ -835,8 +898,9 @@
                     }
                 });
                 
-                currentData = { status, changelogs, security, claude, services };
+                currentData = { status, changelogs, security, claude, services, comprehensive, network, projects };
                 updateUI();
+                updateComprehensiveData();
                 
             } catch (error) {
                 console.error('Critical error fetching data:', error);
@@ -1024,6 +1088,107 @@
                             <div style="margin: 2px 0; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: 'Courier New', monospace;">
                                 <span class="log-entry success">[PID:${proc.pid}] CLAUDE_PROCESS CPU:${proc.cpu}% MEM:${proc.mem}%</span>
                                 <button class="button danger" style="padding: 2px 6px; font-size: 9px;" onclick="killClaude(${proc.pid})">KILL</button>
+                            </div>
+                        `;
+                    }
+                }
+            }
+        }
+        
+        // Update comprehensive metrics and new sections
+        function updateComprehensiveData() {
+            // Update enhanced metrics if available
+            if (currentData.comprehensive && currentData.comprehensive.metrics) {
+                const m = currentData.comprehensive.metrics;
+                document.getElementById('enhanced-cpu').textContent = m.cpu_percent ? `${m.cpu_percent.toFixed(1)}%` : '-';
+                document.getElementById('enhanced-memory').textContent = m.memory_percent ? `${m.memory_percent.toFixed(1)}%` : '-';
+                document.getElementById('enhanced-disk').textContent = m.disk_percent ? `${m.disk_percent.toFixed(1)}%` : '-';
+                document.getElementById('network-io').textContent = m.network_recv_mb && m.network_sent_mb ? 
+                    `↓${(m.network_recv_mb/1024).toFixed(1)}G` : '-';
+                document.getElementById('load-avg').textContent = m.load_1min ? 
+                    `${m.load_1min.toFixed(2)}` : '-';
+                document.getElementById('processes').textContent = m.process_count || '-';
+                
+                // Update alerts if present
+                if (currentData.comprehensive.alerts) {
+                    const alertsSection = document.getElementById('alerts-section');
+                    const alertsContainer = document.getElementById('alerts-container');
+                    
+                    if (currentData.comprehensive.alerts.active > 0 && currentData.comprehensive.alerts.recent) {
+                        alertsSection.style.display = 'block';
+                        alertsContainer.innerHTML = '';
+                        for (const alert of currentData.comprehensive.alerts.recent.slice(0, 5)) {
+                            const levelClass = alert.level === 'critical' ? 'error' : 
+                                             alert.level === 'warning' ? 'warning' : 'info';
+                            alertsContainer.innerHTML += `
+                                <div class="log-entry ${levelClass}" style="margin: 3px 0;">
+                                    <span style="color: #f00;">[${alert.level?.toUpperCase()}]</span>
+                                    <span style="color: #fff;">${alert.message}</span>
+                                    <span style="color: #666; font-size: 9px;">${alert.details || ''}</span>
+                                </div>
+                            `;
+                        }
+                    } else {
+                        alertsSection.style.display = 'none';
+                    }
+                }
+            }
+            
+            // Update network status
+            if (currentData.network) {
+                // Update open ports
+                const portsDiv = document.getElementById('open-ports');
+                if (portsDiv && currentData.network.open_ports) {
+                    portsDiv.innerHTML = '';
+                    for (const port of currentData.network.open_ports.slice(0, 15)) {
+                        portsDiv.innerHTML += `
+                            <div style="margin: 2px 0; font-family: 'Courier New', monospace;">
+                                <span style="color: #0f0;">${String(port.port).padEnd(6, ' ')}</span>
+                                <span style="color: #999;">${port.service.padEnd(15, ' ')}</span>
+                                <span style="color: #666;">${port.address}</span>
+                            </div>
+                        `;
+                    }
+                }
+                
+                // Update connections
+                const connectionsDiv = document.getElementById('active-connections');
+                if (connectionsDiv && currentData.network.connections) {
+                    connectionsDiv.innerHTML = '';
+                    for (const conn of currentData.network.connections.slice(0, 10)) {
+                        if (conn.status === 'ESTABLISHED' || conn.status === 'LISTEN') {
+                            connectionsDiv.innerHTML += `
+                                <div style="margin: 2px 0; font-family: 'Courier New', monospace; font-size: 9px;">
+                                    <span style="color: #0f0;">${conn.local_address}:${conn.local_port}</span>
+                                    <span style="color: #666;"> → </span>
+                                    <span style="color: #999;">${conn.remote_address || 'N/A'}</span>
+                                    <span style="color: #666;">[${conn.status}]</span>
+                                </div>
+                            `;
+                        }
+                    }
+                }
+            }
+            
+            // Update projects
+            if (currentData.projects && currentData.projects.projects) {
+                const projectsDiv = document.getElementById('projects-overview');
+                if (projectsDiv) {
+                    projectsDiv.innerHTML = '';
+                    for (const [name, info] of Object.entries(currentData.projects.projects)) {
+                        const statusSymbol = info.has_changes ? '⚠' : '✓';
+                        const statusColor = info.has_changes ? '#ff0' : '#0f0';
+                        projectsDiv.innerHTML += `
+                            <div style="margin: 5px 0; padding: 5px; border-left: 2px solid ${statusColor};">
+                                <div style="font-size: 11px;">
+                                    <span style="color: ${statusColor};">${statusSymbol}</span>
+                                    <span style="color: #0f0; font-weight: bold;">${name}</span>
+                                    <span style="color: #666;">| ${info.type} | ${info.language}</span>
+                                </div>
+                                <div style="font-size: 10px; color: #999; margin-left: 15px;">
+                                    Branch: <span style="color: #0f0; font-family: monospace;">${info.branch || 'unknown'}</span>
+                                    ${info.has_changes ? '<span style="color: #ff0;"> [uncommitted changes]</span>' : ''}
+                                </div>
                             </div>
                         `;
                     }

@@ -2,6 +2,7 @@
 """
 Security Guard Module for Barbossa
 CRITICAL: Prevents any access to ZKP2P organization repositories
+Enhanced with advanced security features and monitoring
 """
 
 import json
@@ -9,10 +10,18 @@ import logging
 import os
 import re
 import sys
+import hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
 from urllib.parse import urlparse
+
+# Import enhanced security features
+try:
+    from security_enhanced import SecurityEnhanced
+    ENHANCED_SECURITY_AVAILABLE = True
+except ImportError:
+    ENHANCED_SECURITY_AVAILABLE = False
 
 
 class SecurityViolationError(Exception):
