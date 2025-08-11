@@ -21,6 +21,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.profiler import ProfilerMiddleware
 import secrets
 import shutil
+import gzip
+import io
 
 # Add parent directory to path for imports
 sys.path.append(str(Path(__file__).parent.parent))
@@ -47,31 +49,51 @@ app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 auth = HTTPBasicAuth()
 
-# Global cache for API responses
+# Enable JSON minification for better performance
+app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
+
+# Global cache for API responses with size management
 _cache = {}
 _cache_expiry = {}
+_cache_access = {}  # Track access times for LRU eviction
 _cache_lock = threading.Lock()
+_cache_max_size = 200  # Maximum cache entries
 
 def cached_response(ttl: int = 60):
-    """Decorator to cache API responses"""
+    """Decorator to cache API responses with LRU eviction"""
     def decorator(func):
         @functools.wraps(func)
         def wrapper(*args, **kwargs):
             cache_key = f"{func.__name__}_{hash(str(args))}{hash(str(kwargs))}"
+            current_time = time.time()
             
             with _cache_lock:
                 if cache_key in _cache and cache_key in _cache_expiry:
-                    if time.time() < _cache_expiry[cache_key]:
+                    if current_time < _cache_expiry[cache_key]:
+                        _cache_access[cache_key] = current_time
                         return _cache[cache_key]
                     else:
-                        del _cache[cache_key]
-                        del _cache_expiry[cache_key]
+                        # Remove expired entry
+                        _cache.pop(cache_key, None)
+                        _cache_expiry.pop(cache_key, None)
+                        _cache_access.pop(cache_key, None)
+                
+                # Clean up cache if it's too large
+                if len(_cache) >= _cache_max_size:
+                    # Remove oldest accessed entries
+                    sorted_keys = sorted(_cache_access.items(), key=lambda x: x[1])
+                    keys_to_remove = [k for k, _ in sorted_keys[:_cache_max_size // 4]]  # Remove 25%
+                    for key in keys_to_remove:
+                        _cache.pop(key, None)
+                        _cache_expiry.pop(key, None)
+                        _cache_access.pop(key, None)
             
             result = func(*args, **kwargs)
             
             with _cache_lock:
                 _cache[cache_key] = result
-                _cache_expiry[cache_key] = time.time() + ttl
+                _cache_expiry[cache_key] = current_time + ttl
+                _cache_access[cache_key] = current_time
             
             return result
         return wrapper

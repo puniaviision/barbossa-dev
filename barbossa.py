@@ -95,7 +95,7 @@ class BarbossaEnhanced:
     Enhanced Barbossa system with integrated server management capabilities
     """
     
-    VERSION = "2.1.0"
+    VERSION = "2.2.0"
     
     WORK_AREAS = {
         'infrastructure': {
@@ -158,9 +158,16 @@ class BarbossaEnhanced:
         # Initialize performance profiler
         self.profiler = PerformanceProfiler()
         
-        # Initialize thread pool executor for async operations
+        # Initialize caching system for expensive operations
+        self._cache = {}
+        self._cache_expiry = {}
+        self._cache_lock = threading.Lock()
+        
+        # Initialize optimized thread pool executor
+        cpu_count = os.cpu_count() or 2
         self.executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=3, thread_name_prefix="BarbossaAsync"
+            max_workers=min(cpu_count, 4), 
+            thread_name_prefix="BarbossaAsync"
         )
         
         # Ensure directories exist
@@ -236,6 +243,38 @@ class BarbossaEnhanced:
         
         return info
     
+    def _get_cached(self, key: str, ttl: int = 300) -> Optional[Any]:
+        """Get cached value if not expired"""
+        with self._cache_lock:
+            if key in self._cache and key in self._cache_expiry:
+                if time.time() < self._cache_expiry[key]:
+                    return self._cache[key]
+                else:
+                    # Clean expired cache
+                    del self._cache[key]
+                    del self._cache_expiry[key]
+            return None
+    
+    def _set_cache(self, key: str, value: Any, ttl: int = 300):
+        """Set cached value with TTL"""
+        with self._cache_lock:
+            self._cache[key] = value
+            self._cache_expiry[key] = time.time() + ttl
+            # Cleanup old entries periodically
+            if len(self._cache) > 100:
+                self._cleanup_cache()
+    
+    def _cleanup_cache(self):
+        """Clean up expired cache entries"""
+        current_time = time.time()
+        expired_keys = [
+            key for key, expiry_time in self._cache_expiry.items()
+            if current_time >= expiry_time
+        ]
+        for key in expired_keys:
+            self._cache.pop(key, None)
+            self._cache_expiry.pop(key, None)
+    
     def _load_work_tally(self) -> Dict[str, int]:
         """Load work tally from JSON file"""
         tally_file = self.work_tracking_dir / 'work_tally.json'
@@ -258,7 +297,13 @@ class BarbossaEnhanced:
     
     @performance_monitor("system_health_check")
     def perform_system_health_check(self) -> Dict:
-        """Perform comprehensive system health check"""
+        """Perform comprehensive system health check with caching"""
+        # Check cache first
+        cache_key = 'system_health'
+        cached_health = self._get_cached(cache_key, ttl=30)  # Cache for 30 seconds
+        if cached_health:
+            return cached_health
+        
         health = {
             'timestamp': datetime.now().isoformat(),
             'status': 'healthy',
@@ -292,6 +337,9 @@ class BarbossaEnhanced:
                     if not self.server_manager.service_manager.services[service].get('active'):
                         health['issues'].append(f"Service {service} is down")
                         health['status'] = 'critical'
+        
+        # Cache the result
+        self._set_cache(cache_key, health, ttl=30)
         
         return health
     
@@ -684,7 +732,17 @@ Select and implement ONE improvement completely."""
     
     @performance_monitor("comprehensive_status")
     def get_comprehensive_status(self) -> Dict:
-        """Get comprehensive system and Barbossa status"""
+        """Get comprehensive system and Barbossa status with optimized caching"""
+        # Check cache for non-critical status components
+        cache_key = 'comprehensive_status'
+        cached_status = self._get_cached(cache_key, ttl=15)  # Cache for 15 seconds
+        
+        if cached_status:
+            # Update only timestamp and dynamic data
+            cached_status['timestamp'] = datetime.now().isoformat()
+            cached_status['performance'] = self.profiler.get_performance_summary()
+            return cached_status
+        
         status = {
             'version': self.VERSION,
             'timestamp': datetime.now().isoformat(),
@@ -715,6 +773,9 @@ Select and implement ONE improvement completely."""
                 for f in log_files
             ]
         
+        # Cache the status
+        self._set_cache(cache_key, status, ttl=15)
+        
         return status
     
     def cleanup(self):
@@ -726,6 +787,14 @@ Select and implement ONE improvement completely."""
         # Shutdown executor
         self.executor.shutdown(wait=True)
         self.logger.info("Thread pool executor shutdown")
+        
+        # Clear cache
+        with self._cache_lock:
+            cache_size = len(self._cache)
+            self._cache.clear()
+            self._cache_expiry.clear()
+            if cache_size > 0:
+                self.logger.info(f"Cleared {cache_size} cached entries")
         
         # Log final performance summary
         performance_summary = self.profiler.get_performance_summary()

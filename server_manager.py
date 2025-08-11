@@ -40,14 +40,23 @@ class MetricsCollector:
         self._cache_expiry = {}
         self._cache_lock = threading.Lock()
         self._connection_pool = queue.Queue(maxsize=5)
+        self._metrics_buffer = []
+        self._buffer_lock = threading.Lock()
+        self._buffer_size = 10  # Buffer 10 metrics before batch insert
         self._init_database()
         self._init_connection_pool()
     
     def _init_connection_pool(self):
-        """Initialize database connection pool"""
+        """Initialize database connection pool with optimization"""
         for _ in range(5):
             conn = sqlite3.connect(self.db_path, check_same_thread=False)
             conn.row_factory = sqlite3.Row
+            # Enable WAL mode for better concurrent access
+            conn.execute('PRAGMA journal_mode=WAL')
+            conn.execute('PRAGMA synchronous=NORMAL')
+            conn.execute('PRAGMA cache_size=10000')
+            conn.execute('PRAGMA temp_store=MEMORY')
+            conn.execute('PRAGMA mmap_size=268435456')  # 256MB mmap
             self._connection_pool.put(conn)
     
     @contextmanager
@@ -229,28 +238,33 @@ class MetricsCollector:
             self._set_cache(disk_cache_key, disk_metrics, ttl=30)
         metrics.update(disk_metrics)
         
-        # Network metrics (calculate deltas)
+        # Network metrics (calculate deltas) - optimized with error handling
         net_cache_key = 'network_counters'
         previous_net = self._get_cached(net_cache_key, ttl=300)  # 5 min cache
-        net = psutil.net_io_counters()
-        
-        current_net = {
-            'bytes_sent': net.bytes_sent,
-            'bytes_recv': net.bytes_recv,
-            'packets_sent': net.packets_sent,
-            'packets_recv': net.packets_recv,
-            'timestamp': time.time()
-        }
-        
-        if previous_net:
-            time_delta = current_net['timestamp'] - previous_net['timestamp']
-            if time_delta > 0:
-                metrics['network_sent_mbps'] = (current_net['bytes_sent'] - previous_net['bytes_sent']) / (1024 * 1024 * time_delta)
-                metrics['network_recv_mbps'] = (current_net['bytes_recv'] - previous_net['bytes_recv']) / (1024 * 1024 * time_delta)
+        try:
+            net = psutil.net_io_counters()
+            current_net = {
+                'bytes_sent': net.bytes_sent,
+                'bytes_recv': net.bytes_recv,
+                'packets_sent': net.packets_sent,
+                'packets_recv': net.packets_recv,
+                'timestamp': time.time()
+            }
+            
+            if previous_net:
+                time_delta = current_net['timestamp'] - previous_net['timestamp']
+                if time_delta > 0:
+                    metrics['network_sent_mbps'] = (current_net['bytes_sent'] - previous_net['bytes_sent']) / (1024 * 1024 * time_delta)
+                    metrics['network_recv_mbps'] = (current_net['bytes_recv'] - previous_net['bytes_recv']) / (1024 * 1024 * time_delta)
+                else:
+                    metrics['network_sent_mbps'] = 0
+                    metrics['network_recv_mbps'] = 0
             else:
                 metrics['network_sent_mbps'] = 0
                 metrics['network_recv_mbps'] = 0
-        else:
+        except (AttributeError, OSError):
+            # Fallback for network metrics
+            current_net = {'bytes_sent': 0, 'bytes_recv': 0, 'packets_sent': 0, 'packets_recv': 0, 'timestamp': time.time()}
             metrics['network_sent_mbps'] = 0
             metrics['network_recv_mbps'] = 0
         
@@ -316,11 +330,46 @@ class MetricsCollector:
         return metrics
     
     def store_metrics(self, metrics: Dict):
-        """Store metrics in database using connection pool"""
+        """Store metrics with buffering for better performance"""
+        with self._buffer_lock:
+            self._metrics_buffer.append(metrics)
+            
+            # If buffer is full, flush it
+            if len(self._metrics_buffer) >= self._buffer_size:
+                self._flush_metrics_buffer()
+    
+    def _flush_metrics_buffer(self):
+        """Flush metrics buffer to database in a batch operation"""
+        if not self._metrics_buffer:
+            return
+        
         try:
+            buffer_copy = self._metrics_buffer.copy()
+            self._metrics_buffer.clear()
+            
             with self.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute('''
+                data = []
+                for metrics in buffer_copy:
+                    data.append((
+                        metrics.get('cpu_percent'),
+                        metrics.get('memory_percent'),
+                        metrics.get('memory_used_mb'),
+                        metrics.get('memory_total_mb'),
+                        metrics.get('disk_percent'),
+                        metrics.get('disk_used_gb'),
+                        metrics.get('disk_total_gb'),
+                        metrics.get('network_sent_mb'),
+                        metrics.get('network_recv_mb'),
+                        metrics.get('load_1min'),
+                        metrics.get('load_5min'),
+                        metrics.get('load_15min'),
+                        metrics.get('process_count'),
+                        metrics.get('docker_containers'),
+                        metrics.get('temperature')
+                    ))
+                
+                cursor.executemany('''
                     INSERT INTO system_metrics (
                         cpu_percent, memory_percent, memory_used_mb, memory_total_mb,
                         disk_percent, disk_used_gb, disk_total_gb,
@@ -328,27 +377,11 @@ class MetricsCollector:
                         load_1min, load_5min, load_15min,
                         process_count, docker_containers, temperature
                     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    metrics.get('cpu_percent'),
-                    metrics.get('memory_percent'),
-                    metrics.get('memory_used_mb'),
-                    metrics.get('memory_total_mb'),
-                    metrics.get('disk_percent'),
-                    metrics.get('disk_used_gb'),
-                    metrics.get('disk_total_gb'),
-                    metrics.get('network_sent_mb'),
-                    metrics.get('network_recv_mb'),
-                    metrics.get('load_1min'),
-                    metrics.get('load_5min'),
-                    metrics.get('load_15min'),
-                    metrics.get('process_count'),
-                    metrics.get('docker_containers'),
-                    metrics.get('temperature')
-                ))
+                ''', data)
                 conn.commit()
         except Exception as e:
             # Log error but don't crash the monitoring
-            logging.getLogger(__name__).error(f"Failed to store metrics: {e}")
+            logging.getLogger(__name__).error(f"Failed to flush metrics buffer: {e}")
     
     def store_metrics_batch(self, metrics_list: List[Dict]):
         """Store multiple metrics in a single transaction for better performance"""
