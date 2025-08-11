@@ -49,4 +49,15 @@ web_portal/build/
 web_portal/dist/
 
 # Projects folder - managed by bot, not committed
-projects/metrics.db
+projects/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+metrics.db*
+test_*.db*
+
+# Temporary prompts
+temp_prompt.txt
