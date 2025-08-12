@@ -98,6 +98,42 @@
             font-size: 14px;
         }
         
+        /* Navigation Bar */
+        .navbar {
+            background: #000000;
+            padding: 8px 15px;
+            border-bottom: 1px solid #00ff00;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            position: sticky;
+            top: 51px;
+            z-index: 999;
+        }
+        
+        .navbar a {
+            color: #00ff00;
+            text-decoration: none;
+            padding: 5px 15px;
+            border: 1px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+        
+        .navbar a:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
+            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
+        }
+        
+        .navbar a.active {
+            background: rgba(0, 255, 0, 0.3);
+            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
+        }
+        
         .status-badge {
             padding: 3px 6px;
             border-radius: 0;
@@ -902,6 +938,13 @@
             <span class="status-badge status-online" id="portal-status" style="font-size: 12px; text-transform: uppercase;">▓ SYSTEM_ONLINE ▓</span>
             <span style="color: #00aa00; font-size: 13px; font-family: 'VT323', monospace;">USER://{{ username }}</span>
         </div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <div class="navbar">
+        <a href="/" class="active">▸ Dashboard</a>
+        <a href="/workflows">▸ Workflows</a>
+        <a href="/logs">▸ System Logs</a>
     </div>
 
     <div class="container">

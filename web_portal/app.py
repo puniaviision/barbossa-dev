@@ -35,6 +35,15 @@ except ImportError as e:
     print(f"Warning: Could not import server_manager: {e}")
     SERVER_MANAGER_AVAILABLE = False
 
+# Import workflow API
+try:
+    sys.path.append(str(Path(__file__).parent))
+    from workflow_api import workflow_api
+    WORKFLOW_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import workflow API: {e}")
+    WORKFLOW_API_AVAILABLE = False
+
 # Import enhanced security - DISABLED due to rate limiting issues
 try:
     # Temporarily disable enhanced security to fix authentication issues
@@ -48,6 +57,11 @@ except ImportError as e:
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
 auth = HTTPBasicAuth()
+
+# Register workflow API blueprint if available
+if WORKFLOW_API_AVAILABLE:
+    app.register_blueprint(workflow_api)
+    print("Workflow API registered")
 
 # Enable JSON minification for better performance
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
@@ -341,6 +355,22 @@ def get_barbossa_status():
 def index():
     """Main Barbossa dashboard with all features"""
     return render_template('dashboard.html', 
+                         username=session.get('username'),
+                         timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'))
+
+@app.route('/workflows')
+@auth.login_required
+def workflows():
+    """Workflow automation dashboard"""
+    return render_template('workflows.html',
+                         username=session.get('username'),
+                         timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'))
+
+@app.route('/logs')
+@auth.login_required
+def logs():
+    """System logs viewer"""
+    return render_template('logs.html',
                          username=session.get('username'),
                          timestamp=datetime.now().strftime('%Y-%m-%d %H:%M:%S UTC'))
 
@@ -1358,6 +1388,1329 @@ def api_trigger_barbossa_enhanced():
             'success': False,
             'error': str(e)
         }), 500
+
+# ==================== NEW API ENDPOINTS ====================
+
+# Task Scheduling and Management
+@app.route('/api/tasks/scheduled', methods=['GET', 'POST'])
+@auth.login_required
+def api_scheduled_tasks():
+    """Manage scheduled tasks"""
+    if request.method == 'GET':
+        try:
+            # Get current crontab
+            result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+            if result.returncode == 0:
+                cron_lines = result.stdout.strip().split('\n')
+                tasks = []
+                for line in cron_lines:
+                    if line.strip() and not line.startswith('#'):
+                        parts = line.split()
+                        if len(parts) >= 6:
+                            tasks.append({
+                                'schedule': ' '.join(parts[:5]),
+                                'command': ' '.join(parts[5:]),
+                                'description': f"Runs at {parts[1]}:{parts[0] if parts[0] != '*' else '00'}"
+                            })
+                return jsonify({'tasks': tasks})
+            else:
+                return jsonify({'tasks': []})
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+    
+    else:  # POST - Create new scheduled task
+        data = request.json
+        schedule = data.get('schedule')  # e.g., "0 */4 * * *"
+        command = data.get('command')
+        description = data.get('description', '')
+        
+        if not schedule or not command:
+            return jsonify({'error': 'Schedule and command required'}), 400
+        
+        try:
+            # Validate cron schedule format
+            cron_parts = schedule.split()
+            if len(cron_parts) != 5:
+                return jsonify({'error': 'Invalid cron schedule format'}), 400
+            
+            # Get current crontab
+            result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+            current_cron = result.stdout if result.returncode == 0 else ""
+            
+            # Add new task
+            new_line = f"# {description}\n{schedule} {command}\n" if description else f"{schedule} {command}\n"
+            updated_cron = current_cron + new_line
+            
+            # Write updated crontab
+            process = subprocess.Popen(['crontab', '-'], stdin=subprocess.PIPE, text=True)
+            process.communicate(updated_cron)
+            
+            if process.returncode == 0:
+                return jsonify({
+                    'success': True,
+                    'message': f'Scheduled task created: {description or command}'
+                })
+            else:
+                return jsonify({'error': 'Failed to update crontab'}), 500
+                
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/api/tasks/scheduled/<int:task_id>', methods=['DELETE'])
+@auth.login_required
+def api_delete_scheduled_task(task_id):
+    """Delete a scheduled task"""
+    try:
+        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+        if result.returncode != 0:
+            return jsonify({'error': 'No crontab found'}), 404
+        
+        lines = result.stdout.split('\n')
+        task_lines = [line for line in lines if line.strip() and not line.startswith('#')]
+        
+        if task_id >= len(task_lines):
+            return jsonify({'error': 'Task not found'}), 404
+        
+        # Remove the task (and its comment if present)
+        filtered_lines = []
+        skip_next = False
+        
+        for i, line in enumerate(lines):
+            if skip_next:
+                skip_next = False
+                continue
+            
+            if line.strip() and not line.startswith('#'):
+                if task_lines.index(line) == task_id:
+                    # Skip this line and check if previous line was a comment
+                    if i > 0 and lines[i-1].startswith('#'):
+                        filtered_lines.pop()  # Remove the comment too
+                    continue
+            
+            filtered_lines.append(line)
+        
+        # Write updated crontab
+        updated_cron = '\n'.join(filtered_lines)
+        process = subprocess.Popen(['crontab', '-'], stdin=subprocess.PIPE, text=True)
+        process.communicate(updated_cron)
+        
+        if process.returncode == 0:
+            return jsonify({'success': True, 'message': 'Task deleted'})
+        else:
+            return jsonify({'error': 'Failed to update crontab'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Performance Analytics
+@app.route('/api/analytics/performance')
+@auth.login_required
+@performance_monitor
+@cached_response(ttl=120)  # Cache for 2 minutes
+def api_performance_analytics():
+    """Get performance analytics and trends"""
+    if not server_manager:
+        return jsonify({'error': 'Server manager not available'}), 503
+    
+    try:
+        # Get metrics from last 24 hours for trend analysis
+        metrics = server_manager.metrics_collector.get_historical_metrics(24, limit=1000)
+        
+        if not metrics:
+            return jsonify({'analytics': {}, 'trends': {}})
+        
+        # Calculate trends and analytics
+        analytics = {
+            'avg_cpu': sum(m.get('cpu_percent', 0) for m in metrics) / len(metrics),
+            'avg_memory': sum(m.get('memory_percent', 0) for m in metrics) / len(metrics),
+            'avg_disk': sum(m.get('disk_percent', 0) for m in metrics) / len(metrics),
+            'peak_cpu': max(m.get('cpu_percent', 0) for m in metrics),
+            'peak_memory': max(m.get('memory_percent', 0) for m in metrics),
+            'low_memory': min(m.get('memory_percent', 0) for m in metrics),
+            'avg_load': sum(m.get('load_1min', 0) for m in metrics) / len(metrics),
+            'network_peak_in': max(m.get('network_recv_mbps', 0) for m in metrics),
+            'network_peak_out': max(m.get('network_sent_mbps', 0) for m in metrics)
+        }
+        
+        # Calculate trends (compare last 6 hours vs previous 6 hours)
+        mid_point = len(metrics) // 2
+        recent_metrics = metrics[mid_point:]
+        older_metrics = metrics[:mid_point]
+        
+        if recent_metrics and older_metrics:
+            recent_avg_cpu = sum(m.get('cpu_percent', 0) for m in recent_metrics) / len(recent_metrics)
+            older_avg_cpu = sum(m.get('cpu_percent', 0) for m in older_metrics) / len(older_metrics)
+            
+            recent_avg_mem = sum(m.get('memory_percent', 0) for m in recent_metrics) / len(recent_metrics)
+            older_avg_mem = sum(m.get('memory_percent', 0) for m in older_metrics) / len(older_metrics)
+            
+            trends = {
+                'cpu_trend': 'increasing' if recent_avg_cpu > older_avg_cpu else 'decreasing',
+                'cpu_change': round(recent_avg_cpu - older_avg_cpu, 2),
+                'memory_trend': 'increasing' if recent_avg_mem > older_avg_mem else 'decreasing',
+                'memory_change': round(recent_avg_mem - older_avg_mem, 2)
+            }
+        else:
+            trends = {'cpu_trend': 'stable', 'memory_trend': 'stable'}
+        
+        # Performance recommendations
+        recommendations = []
+        if analytics['avg_cpu'] > 80:
+            recommendations.append('High CPU usage detected. Consider optimizing processes.')
+        if analytics['avg_memory'] > 85:
+            recommendations.append('High memory usage. Consider memory cleanup or upgrade.')
+        if analytics['avg_disk'] > 90:
+            recommendations.append('Disk space running low. Clean up old files.')
+        if analytics['avg_load'] > psutil.cpu_count():
+            recommendations.append('System load high. Check for resource-intensive processes.')
+        
+        return jsonify({
+            'analytics': analytics,
+            'trends': trends,
+            'recommendations': recommendations,
+            'data_points': len(metrics),
+            'time_range': '24 hours'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Resource Optimization
+@app.route('/api/optimization/suggestions')
+@auth.login_required
+@performance_monitor
+@cached_response(ttl=300)  # Cache for 5 minutes
+def api_optimization_suggestions():
+    """Get automated resource optimization suggestions"""
+    suggestions = []
+    
+    try:
+        # Check system resources
+        cpu_percent = psutil.cpu_percent(interval=1)
+        memory = psutil.virtual_memory()
+        disk = psutil.disk_usage('/')
+        
+        # CPU optimization suggestions
+        if cpu_percent > 80:
+            suggestions.append({
+                'category': 'cpu',
+                'priority': 'high',
+                'title': 'High CPU Usage Detected',
+                'description': f'CPU usage is {cpu_percent:.1f}%',
+                'actions': [
+                    'Identify high-CPU processes with top command',
+                    'Consider process optimization or scaling',
+                    'Check for CPU-intensive cron jobs'
+                ]
+            })
+        
+        # Memory optimization suggestions
+        if memory.percent > 85:
+            suggestions.append({
+                'category': 'memory',
+                'priority': 'high',
+                'title': 'High Memory Usage',
+                'description': f'Memory usage is {memory.percent:.1f}%',
+                'actions': [
+                    'Clear system caches with sync && echo 3 > /proc/sys/vm/drop_caches',
+                    'Restart memory-intensive services',
+                    'Check for memory leaks in applications'
+                ]
+            })
+        
+        # Disk optimization suggestions
+        if disk.percent > 90:
+            suggestions.append({
+                'category': 'disk',
+                'priority': 'critical',
+                'title': 'Low Disk Space',
+                'description': f'Disk usage is {disk.percent:.1f}%',
+                'actions': [
+                    'Clean old log files older than 30 days',
+                    'Remove Docker unused images and containers',
+                    'Archive old backup files'
+                ]
+            })
+        elif disk.percent > 80:
+            suggestions.append({
+                'category': 'disk',
+                'priority': 'medium',
+                'title': 'Disk Space Warning',
+                'description': f'Disk usage is {disk.percent:.1f}%',
+                'actions': [
+                    'Schedule regular cleanup of temporary files',
+                    'Implement log rotation',
+                    'Monitor disk usage trends'
+                ]
+            })
+        
+        # Service optimization suggestions
+        if server_manager:
+            services = server_manager.service_manager.get_all_services()
+            inactive_services = []
+            for service_type, service_list in services.items():
+                for name, info in service_list.items():
+                    if not info.get('active', False) and service_type == 'systemd':
+                        inactive_services.append(name)
+            
+            if len(inactive_services) > 5:
+                suggestions.append({
+                    'category': 'services',
+                    'priority': 'low',
+                    'title': 'Inactive Services Found',
+                    'description': f'Found {len(inactive_services)} inactive services',
+                    'actions': [
+                        'Review and disable unused services',
+                        'Clean up service dependencies',
+                        'Optimize service startup order'
+                    ]
+                })
+        
+        # Network optimization suggestions
+        try:
+            connections = len(psutil.net_connections())
+            if connections > 1000:
+                suggestions.append({
+                    'category': 'network',
+                    'priority': 'medium',
+                    'title': 'High Network Connection Count',
+                    'description': f'{connections} active connections',
+                    'actions': [
+                        'Check for connection pooling optimization',
+                        'Review firewall rules',
+                        'Monitor for potential connection leaks'
+                    ]
+                })
+        except:
+            pass  # Skip if permissions don't allow
+        
+        # Docker optimization suggestions
+        try:
+            result = subprocess.run(['docker', 'system', 'df'], capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                # Parse docker system df output to check for reclaimable space
+                lines = result.stdout.split('\n')
+                for line in lines:
+                    if 'Build Cache' in line and 'MB' in line:
+                        # Extract size information
+                        parts = line.split()
+                        if len(parts) > 3 and 'GB' in parts[2]:
+                            cache_size = float(parts[2].replace('GB', ''))
+                            if cache_size > 1.0:  # More than 1GB build cache
+                                suggestions.append({
+                                    'category': 'docker',
+                                    'priority': 'medium',
+                                    'title': 'Docker Build Cache Cleanup',
+                                    'description': f'{cache_size:.1f}GB build cache detected',
+                                    'actions': [
+                                        'Run docker system prune to clean build cache',
+                                        'Remove unused Docker images',
+                                        'Implement regular Docker cleanup schedule'
+                                    ]
+                                })
+        except:
+            pass
+        
+        return jsonify({
+            'suggestions': suggestions,
+            'total_count': len(suggestions),
+            'priorities': {
+                'critical': len([s for s in suggestions if s['priority'] == 'critical']),
+                'high': len([s for s in suggestions if s['priority'] == 'high']),
+                'medium': len([s for s in suggestions if s['priority'] == 'medium']),
+                'low': len([s for s in suggestions if s['priority'] == 'low'])
+            }
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/optimization/apply', methods=['POST'])
+@auth.login_required
+def api_apply_optimization():
+    """Apply specific optimization suggestions"""
+    data = request.json
+    optimization_type = data.get('type')
+    action = data.get('action')
+    
+    if not optimization_type or not action:
+        return jsonify({'error': 'Type and action required'}), 400
+    
+    results = []
+    
+    try:
+        if optimization_type == 'disk' and action == 'clean_logs':
+            # Clean old log files
+            cutoff_date = datetime.now() - timedelta(days=30)
+            cleaned_count = 0
+            cleaned_size = 0
+            
+            for log_dir in [LOGS_DIR, '/var/log']:
+                if Path(log_dir).exists():
+                    for log_file in Path(log_dir).rglob('*.log*'):
+                        if log_file.is_file():
+                            file_time = datetime.fromtimestamp(log_file.stat().st_mtime)
+                            if file_time < cutoff_date:
+                                file_size = log_file.stat().st_size
+                                log_file.unlink()
+                                cleaned_count += 1
+                                cleaned_size += file_size
+            
+            results.append({
+                'action': 'clean_logs',
+                'success': True,
+                'message': f'Cleaned {cleaned_count} log files ({cleaned_size / 1024 / 1024:.1f} MB)'
+            })
+        
+        elif optimization_type == 'memory' and action == 'drop_caches':
+            # Drop system caches (requires sudo)
+            try:
+                subprocess.run(['sync'], check=True, timeout=30)
+                # Note: This would need proper sudo configuration
+                result = subprocess.run(['sudo', 'sysctl', 'vm.drop_caches=3'], 
+                                      capture_output=True, text=True, timeout=30)
+                if result.returncode == 0:
+                    results.append({
+                        'action': 'drop_caches',
+                        'success': True,
+                        'message': 'System caches cleared successfully'
+                    })
+                else:
+                    results.append({
+                        'action': 'drop_caches',
+                        'success': False,
+                        'message': 'Failed to clear caches (permissions required)'
+                    })
+            except Exception as e:
+                results.append({
+                    'action': 'drop_caches',
+                    'success': False,
+                    'message': f'Error clearing caches: {str(e)}'
+                })
+        
+        elif optimization_type == 'docker' and action == 'prune':
+            # Docker system prune
+            try:
+                result = subprocess.run(['docker', 'system', 'prune', '-f'], 
+                                      capture_output=True, text=True, timeout=120)
+                if result.returncode == 0:
+                    results.append({
+                        'action': 'docker_prune',
+                        'success': True,
+                        'message': f'Docker cleanup completed: {result.stdout.strip()}'
+                    })
+                else:
+                    results.append({
+                        'action': 'docker_prune',
+                        'success': False,
+                        'message': f'Docker cleanup failed: {result.stderr}'
+                    })
+            except Exception as e:
+                results.append({
+                    'action': 'docker_prune',
+                    'success': False,
+                    'message': f'Error running Docker cleanup: {str(e)}'
+                })
+        
+        else:
+            return jsonify({'error': f'Unknown optimization: {optimization_type}/{action}'}), 400
+        
+        return jsonify({
+            'success': True,
+            'results': results,
+            'applied_count': len([r for r in results if r['success']])
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Integration Management
+@app.route('/api/integrations', methods=['GET'])
+@auth.login_required
+@cached_response(ttl=120)  # Cache for 2 minutes
+def api_list_integrations():
+    """List available and active integrations"""
+    integrations = []
+    
+    # Check GitHub integration
+    github_token = os.getenv('GITHUB_TOKEN')
+    integrations.append({
+        'name': 'GitHub',
+        'type': 'vcs',
+        'status': 'active' if github_token else 'inactive',
+        'description': 'Git repository management and automation',
+        'config_required': ['GITHUB_TOKEN'],
+        'endpoints': ['/api/integrations/github/repos', '/api/integrations/github/webhooks']
+    })
+    
+    # Check Anthropic Claude integration
+    anthropic_key = os.getenv('ANTHROPIC_API_KEY')
+    integrations.append({
+        'name': 'Anthropic Claude',
+        'type': 'ai',
+        'status': 'active' if anthropic_key else 'inactive',
+        'description': 'AI-powered development assistance',
+        'config_required': ['ANTHROPIC_API_KEY'],
+        'endpoints': ['/api/integrations/claude/status']
+    })
+    
+    # Check Docker integration
+    try:
+        result = subprocess.run(['docker', '--version'], capture_output=True, text=True, timeout=5)
+        docker_active = result.returncode == 0
+    except:
+        docker_active = False
+    
+    integrations.append({
+        'name': 'Docker',
+        'type': 'infrastructure',
+        'status': 'active' if docker_active else 'inactive',
+        'description': 'Container management and orchestration',
+        'config_required': [],
+        'endpoints': ['/api/integrations/docker/containers', '/api/integrations/docker/images']
+    })
+    
+    # Check Cloudflare integration
+    cloudflare_active = Path.home().joinpath('.cloudflared', 'config.yml').exists()
+    integrations.append({
+        'name': 'Cloudflare Tunnel',
+        'type': 'networking',
+        'status': 'active' if cloudflare_active else 'inactive',
+        'description': 'Secure external access tunnel',
+        'config_required': ['Cloudflare account', 'Tunnel configuration'],
+        'endpoints': ['/api/integrations/cloudflare/status']
+    })
+    
+    # Check Redis integration
+    try:
+        result = subprocess.run(['redis-cli', 'ping'], capture_output=True, text=True, timeout=5)
+        redis_active = 'PONG' in result.stdout
+    except:
+        redis_active = False
+    
+    integrations.append({
+        'name': 'Redis',
+        'type': 'database',
+        'status': 'active' if redis_active else 'inactive',
+        'description': 'In-memory data structure store',
+        'config_required': [],
+        'endpoints': ['/api/integrations/redis/status', '/api/integrations/redis/keys']
+    })
+    
+    return jsonify({
+        'integrations': integrations,
+        'active_count': len([i for i in integrations if i['status'] == 'active']),
+        'total_count': len(integrations)
+    })
+
+@app.route('/api/integrations/github/repos')
+@auth.login_required
+@cached_response(ttl=300)  # Cache for 5 minutes
+def api_github_repos():
+    """Get GitHub repository information"""
+    github_token = os.getenv('GITHUB_TOKEN')
+    if not github_token:
+        return jsonify({'error': 'GitHub token not configured'}), 503
+    
+    try:
+        import requests
+        headers = {'Authorization': f'token {github_token}'}
+        
+        # Get user repositories
+        response = requests.get('https://api.github.com/user/repos', headers=headers, timeout=10)
+        if response.status_code == 200:
+            repos = response.json()
+            
+            # Filter to ADWilkinson repositories for security
+            filtered_repos = []
+            for repo in repos:
+                if repo['owner']['login'] == 'ADWilkinson':
+                    filtered_repos.append({
+                        'name': repo['name'],
+                        'full_name': repo['full_name'],
+                        'description': repo['description'],
+                        'language': repo['language'],
+                        'stars': repo['stargazers_count'],
+                        'forks': repo['forks_count'],
+                        'updated_at': repo['updated_at'],
+                        'private': repo['private']
+                    })
+            
+            return jsonify({
+                'repositories': filtered_repos,
+                'total_count': len(filtered_repos)
+            })
+        else:
+            return jsonify({'error': f'GitHub API error: {response.status_code}'}), 500
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/integrations/docker/containers')
+@auth.login_required
+@cached_response(ttl=30)  # Cache for 30 seconds
+def api_docker_containers():
+    """Get detailed Docker container information"""
+    try:
+        # Get containers with detailed format
+        result = subprocess.run([
+            'docker', 'ps', '-a', '--format',
+            '{{.Names}}\t{{.Status}}\t{{.Image}}\t{{.Ports}}\t{{.CreatedAt}}\t{{.Size}}'
+        ], capture_output=True, text=True, timeout=10)
+        
+        if result.returncode != 0:
+            return jsonify({'error': 'Docker not available or permission denied'}), 503
+        
+        containers = []
+        if result.stdout.strip():
+            for line in result.stdout.strip().split('\n'):
+                if line and '\t' in line:
+                    parts = line.split('\t')
+                    if len(parts) >= 4:
+                        containers.append({
+                            'name': parts[0],
+                            'status': parts[1],
+                            'image': parts[2],
+                            'ports': parts[3] if len(parts) > 3 else '',
+                            'created': parts[4] if len(parts) > 4 else '',
+                            'size': parts[5] if len(parts) > 5 else '',
+                            'running': 'Up' in parts[1]
+                        })
+        
+        # Get Docker system info
+        system_result = subprocess.run(['docker', 'system', 'df', '--format', 'json'], 
+                                     capture_output=True, text=True, timeout=10)
+        system_info = {}
+        if system_result.returncode == 0:
+            try:
+                system_info = json.loads(system_result.stdout)
+            except:
+                pass
+        
+        return jsonify({
+            'containers': containers,
+            'system_info': system_info,
+            'total_containers': len(containers),
+            'running_containers': len([c for c in containers if c['running']])
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Advanced Monitoring and Analytics
+@app.route('/api/monitoring/alerts/rules', methods=['GET', 'POST'])
+@auth.login_required
+def api_alert_rules():
+    """Manage monitoring alert rules"""
+    rules_file = BARBOSSA_DIR / 'config' / 'alert_rules.json'
+    
+    if request.method == 'GET':
+        if rules_file.exists():
+            with open(rules_file, 'r') as f:
+                rules = json.load(f)
+        else:
+            # Default alert rules
+            rules = {
+                'cpu_high': {
+                    'name': 'High CPU Usage',
+                    'condition': 'cpu_percent > 90',
+                    'duration': 300,  # 5 minutes
+                    'severity': 'critical',
+                    'enabled': True
+                },
+                'memory_high': {
+                    'name': 'High Memory Usage',
+                    'condition': 'memory_percent > 90',
+                    'duration': 300,
+                    'severity': 'critical',
+                    'enabled': True
+                },
+                'disk_full': {
+                    'name': 'Disk Space Critical',
+                    'condition': 'disk_percent > 95',
+                    'duration': 60,
+                    'severity': 'critical',
+                    'enabled': True
+                },
+                'load_high': {
+                    'name': 'High System Load',
+                    'condition': 'load_15min > cpu_count * 2',
+                    'duration': 600,  # 10 minutes
+                    'severity': 'warning',
+                    'enabled': True
+                }
+            }
+            
+            # Save default rules
+            os.makedirs(rules_file.parent, exist_ok=True)
+            with open(rules_file, 'w') as f:
+                json.dump(rules, f, indent=2)
+        
+        return jsonify({'rules': rules})
+    
+    else:  # POST - Create or update alert rule
+        data = request.json
+        rule_id = data.get('id')
+        rule_config = data.get('rule')
+        
+        if not rule_id or not rule_config:
+            return jsonify({'error': 'Rule ID and configuration required'}), 400
+        
+        # Load existing rules
+        if rules_file.exists():
+            with open(rules_file, 'r') as f:
+                rules = json.load(f)
+        else:
+            rules = {}
+        
+        # Add or update rule
+        rules[rule_id] = rule_config
+        
+        # Save updated rules
+        os.makedirs(rules_file.parent, exist_ok=True)
+        with open(rules_file, 'w') as f:
+            json.dump(rules, f, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Alert rule {rule_id} {"updated" if rule_id in rules else "created"}'
+        })
+
+@app.route('/api/monitoring/anomalies')
+@auth.login_required
+@cached_response(ttl=180)  # Cache for 3 minutes
+def api_anomaly_detection():
+    """Detect system anomalies using statistical analysis"""
+    if not server_manager:
+        return jsonify({'error': 'Server manager not available'}), 503
+    
+    try:
+        # Get historical metrics for anomaly detection
+        metrics = server_manager.metrics_collector.get_historical_metrics(24, limit=500)
+        
+        if len(metrics) < 10:
+            return jsonify({'anomalies': [], 'message': 'Insufficient data for anomaly detection'})
+        
+        anomalies = []
+        
+        # Extract time series data
+        cpu_values = [m.get('cpu_percent', 0) for m in metrics]
+        memory_values = [m.get('memory_percent', 0) for m in metrics]
+        disk_values = [m.get('disk_percent', 0) for m in metrics]
+        
+        # Simple anomaly detection using standard deviation
+        def detect_anomalies(values, metric_name, threshold=2.0):
+            if len(values) < 5:
+                return []
+            
+            import statistics
+            mean_val = statistics.mean(values)
+            std_val = statistics.stdev(values) if len(values) > 1 else 0
+            
+            detected = []
+            for i, value in enumerate(values[-10:]):  # Check last 10 values
+                if std_val > 0 and abs(value - mean_val) > threshold * std_val:
+                    detected.append({
+                        'metric': metric_name,
+                        'value': value,
+                        'expected_range': f'{mean_val - std_val:.1f}-{mean_val + std_val:.1f}',
+                        'deviation': abs(value - mean_val) / std_val if std_val > 0 else 0,
+                        'timestamp': metrics[-(10-i)].get('timestamp', 'unknown'),
+                        'severity': 'high' if abs(value - mean_val) > 3 * std_val else 'medium'
+                    })
+            return detected
+        
+        # Detect anomalies for each metric
+        anomalies.extend(detect_anomalies(cpu_values, 'cpu_percent'))
+        anomalies.extend(detect_anomalies(memory_values, 'memory_percent'))
+        anomalies.extend(detect_anomalies(disk_values, 'disk_percent'))
+        
+        # Sort by severity and deviation
+        anomalies.sort(key=lambda x: (x['severity'] == 'high', x['deviation']), reverse=True)
+        
+        return jsonify({
+            'anomalies': anomalies[:20],  # Return top 20 anomalies
+            'total_count': len(anomalies),
+            'data_points_analyzed': len(metrics),
+            'detection_method': 'statistical_deviation'
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Workflow Automation
+@app.route('/api/workflows', methods=['GET', 'POST'])
+@auth.login_required
+def api_workflows():
+    """Manage automation workflows"""
+    workflows_file = BARBOSSA_DIR / 'config' / 'workflows.json'
+    
+    if request.method == 'GET':
+        if workflows_file.exists():
+            with open(workflows_file, 'r') as f:
+                workflows = json.load(f)
+        else:
+            workflows = {}
+        
+        return jsonify({'workflows': workflows})
+    
+    else:  # POST - Create new workflow
+        data = request.json
+        workflow_id = data.get('id')
+        workflow_config = data.get('workflow')
+        
+        if not workflow_id or not workflow_config:
+            return jsonify({'error': 'Workflow ID and configuration required'}), 400
+        
+        # Validate workflow structure
+        required_fields = ['name', 'description', 'trigger', 'actions']
+        for field in required_fields:
+            if field not in workflow_config:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Load existing workflows
+        if workflows_file.exists():
+            with open(workflows_file, 'r') as f:
+                workflows = json.load(f)
+        else:
+            workflows = {}
+        
+        # Add workflow metadata
+        workflow_config['created_at'] = datetime.now().isoformat()
+        workflow_config['created_by'] = session.get('username')
+        workflow_config['enabled'] = workflow_config.get('enabled', True)
+        workflow_config['execution_count'] = 0
+        workflow_config['last_execution'] = None
+        
+        workflows[workflow_id] = workflow_config
+        
+        # Save workflows
+        os.makedirs(workflows_file.parent, exist_ok=True)
+        with open(workflows_file, 'w') as f:
+            json.dump(workflows, f, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Workflow {workflow_id} created successfully',
+            'workflow': workflow_config
+        })
+
+@app.route('/api/workflows/<workflow_id>/execute', methods=['POST'])
+@auth.login_required
+def api_execute_workflow(workflow_id):
+    """Execute a specific workflow"""
+    workflows_file = BARBOSSA_DIR / 'config' / 'workflows.json'
+    
+    if not workflows_file.exists():
+        return jsonify({'error': 'No workflows configured'}), 404
+    
+    with open(workflows_file, 'r') as f:
+        workflows = json.load(f)
+    
+    if workflow_id not in workflows:
+        return jsonify({'error': 'Workflow not found'}), 404
+    
+    workflow = workflows[workflow_id]
+    if not workflow.get('enabled', True):
+        return jsonify({'error': 'Workflow is disabled'}), 400
+    
+    try:
+        execution_results = []
+        
+        # Execute each action in the workflow
+        for i, action in enumerate(workflow['actions']):
+            action_type = action.get('type')
+            action_config = action.get('config', {})
+            
+            if action_type == 'run_command':
+                # Execute shell command
+                command = action_config.get('command')
+                if command:
+                    result = subprocess.run(
+                        command,
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                        timeout=action_config.get('timeout', 30),
+                        cwd=action_config.get('working_directory', str(BARBOSSA_DIR))
+                    )
+                    
+                    execution_results.append({
+                        'action_index': i,
+                        'type': action_type,
+                        'success': result.returncode == 0,
+                        'output': sanitize_sensitive_info(result.stdout or result.stderr),
+                        'return_code': result.returncode
+                    })
+                else:
+                    execution_results.append({
+                        'action_index': i,
+                        'type': action_type,
+                        'success': False,
+                        'error': 'No command specified'
+                    })
+            
+            elif action_type == 'trigger_barbossa':
+                # Trigger Barbossa execution
+                work_area = action_config.get('work_area', 'auto')
+                
+                # Check if Barbossa is already running
+                result = subprocess.run(['pgrep', '-f', 'barbossa.py'], capture_output=True, text=True)
+                if result.stdout.strip():
+                    execution_results.append({
+                        'action_index': i,
+                        'type': action_type,
+                        'success': False,
+                        'error': 'Barbossa is already running'
+                    })
+                else:
+                    cmd = ['python3', str(BARBOSSA_DIR / 'barbossa.py')]
+                    if work_area != 'auto':
+                        cmd.extend(['--area', work_area])
+                    
+                    subprocess.Popen(cmd, cwd=str(BARBOSSA_DIR))
+                    execution_results.append({
+                        'action_index': i,
+                        'type': action_type,
+                        'success': True,
+                        'message': f'Barbossa triggered for {work_area}'
+                    })
+            
+            elif action_type == 'send_notification':
+                # Placeholder for notification sending
+                execution_results.append({
+                    'action_index': i,
+                    'type': action_type,
+                    'success': True,
+                    'message': 'Notification functionality not yet implemented'
+                })
+            
+            else:
+                execution_results.append({
+                    'action_index': i,
+                    'type': action_type,
+                    'success': False,
+                    'error': f'Unknown action type: {action_type}'
+                })
+        
+        # Update workflow execution stats
+        workflows[workflow_id]['execution_count'] += 1
+        workflows[workflow_id]['last_execution'] = datetime.now().isoformat()
+        workflows[workflow_id]['last_execution_results'] = execution_results
+        
+        with open(workflows_file, 'w') as f:
+            json.dump(workflows, f, indent=2)
+        
+        # Calculate success rate
+        successful_actions = len([r for r in execution_results if r.get('success', False)])
+        success_rate = successful_actions / len(execution_results) if execution_results else 0
+        
+        return jsonify({
+            'success': True,
+            'workflow_id': workflow_id,
+            'execution_results': execution_results,
+            'success_rate': success_rate,
+            'total_actions': len(execution_results),
+            'successful_actions': successful_actions
+        })
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Advanced Data Export/Import
+@app.route('/api/data/export', methods=['POST'])
+@auth.login_required
+def api_data_export():
+    """Export system data in various formats"""
+    data = request.json
+    export_type = data.get('type', 'complete')
+    format_type = data.get('format', 'json')
+    date_range = data.get('date_range', 7)  # days
+    
+    try:
+        export_data = {
+            'export_info': {
+                'timestamp': datetime.now().isoformat(),
+                'type': export_type,
+                'format': format_type,
+                'date_range_days': date_range,
+                'exported_by': session.get('username')
+            },
+            'data': {}
+        }
+        
+        cutoff_date = datetime.now() - timedelta(days=date_range)
+        
+        if export_type in ['complete', 'logs']:
+            # Export logs
+            logs = []
+            if LOGS_DIR.exists():
+                for log_file in LOGS_DIR.glob('*.log'):
+                    if datetime.fromtimestamp(log_file.stat().st_mtime) >= cutoff_date:
+                        try:
+                            with open(log_file, 'r') as f:
+                                content = f.read()
+                                logs.append({
+                                    'filename': log_file.name,
+                                    'size': len(content),
+                                    'modified': datetime.fromtimestamp(log_file.stat().st_mtime).isoformat(),
+                                    'content': sanitize_sensitive_info(content[:10000])  # Limit size
+                                })
+                        except Exception as e:
+                            logs.append({
+                                'filename': log_file.name,
+                                'error': f'Could not read file: {str(e)}'
+                            })
+            export_data['data']['logs'] = logs
+        
+        if export_type in ['complete', 'metrics'] and server_manager:
+            # Export metrics
+            metrics = server_manager.metrics_collector.get_historical_metrics(date_range * 24)
+            export_data['data']['metrics'] = metrics
+        
+        if export_type in ['complete', 'changelogs']:
+            # Export changelogs
+            changelogs = []
+            if CHANGELOGS_DIR.exists():
+                for changelog_file in CHANGELOGS_DIR.glob('*.md'):
+                    if datetime.fromtimestamp(changelog_file.stat().st_mtime) >= cutoff_date:
+                        try:
+                            with open(changelog_file, 'r') as f:
+                                changelogs.append({
+                                    'filename': changelog_file.name,
+                                    'content': sanitize_sensitive_info(f.read()),
+                                    'modified': datetime.fromtimestamp(changelog_file.stat().st_mtime).isoformat()
+                                })
+                        except Exception as e:
+                            changelogs.append({
+                                'filename': changelog_file.name,
+                                'error': f'Could not read file: {str(e)}'
+                            })
+            export_data['data']['changelogs'] = changelogs
+        
+        if export_type in ['complete', 'configuration']:
+            # Export configuration (safe parts only)
+            config_data = {}
+            
+            # Work tally
+            tally_file = WORK_TRACKING_DIR / 'work_tally.json'
+            if tally_file.exists():
+                try:
+                    with open(tally_file, 'r') as f:
+                        config_data['work_tally'] = json.load(f)
+                except:
+                    pass
+            
+            # Alert rules
+            rules_file = BARBOSSA_DIR / 'config' / 'alert_rules.json'
+            if rules_file.exists():
+                try:
+                    with open(rules_file, 'r') as f:
+                        config_data['alert_rules'] = json.load(f)
+                except:
+                    pass
+            
+            # Workflows
+            workflows_file = BARBOSSA_DIR / 'config' / 'workflows.json'
+            if workflows_file.exists():
+                try:
+                    with open(workflows_file, 'r') as f:
+                        config_data['workflows'] = json.load(f)
+                except:
+                    pass
+            
+            export_data['data']['configuration'] = config_data
+        
+        # Return data based on format
+        if format_type == 'json':
+            return jsonify(export_data)
+        
+        elif format_type == 'csv':
+            # Convert to CSV (simplified version for metrics)
+            if 'metrics' in export_data['data']:
+                import csv
+                import io
+                
+                output = io.StringIO()
+                writer = csv.writer(output)
+                
+                metrics = export_data['data']['metrics']
+                if metrics:
+                    # Write headers
+                    writer.writerow(metrics[0].keys())
+                    # Write data
+                    for metric in metrics:
+                        writer.writerow(metric.values())
+                
+                response = app.response_class(
+                    output.getvalue(),
+                    mimetype='text/csv',
+                    headers={
+                        'Content-Disposition': f'attachment;filename=barbossa_export_{datetime.now().strftime("%Y%m%d_%H%M%S")}.csv'
+                    }
+                )
+                return response
+            else:
+                return jsonify({'error': 'CSV format only supported for metrics export'}), 400
+        
+        else:
+            return jsonify({'error': f'Unsupported format: {format_type}'}), 400
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/data/import', methods=['POST'])
+@auth.login_required
+def api_data_import():
+    """Import system data from uploaded files"""
+    if 'file' not in request.files:
+        return jsonify({'error': 'No file provided'}), 400
+    
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({'error': 'No file selected'}), 400
+    
+    import_type = request.form.get('type', 'configuration')
+    
+    try:
+        # Read and parse the uploaded file
+        file_content = file.read().decode('utf-8')
+        
+        if file.filename.endswith('.json'):
+            import_data = json.loads(file_content)
+        else:
+            return jsonify({'error': 'Only JSON files are supported for import'}), 400
+        
+        results = []
+        
+        if import_type in ['configuration', 'complete']:
+            # Import configuration data
+            if 'data' in import_data and 'configuration' in import_data['data']:
+                config_data = import_data['data']['configuration']
+                
+                # Import alert rules
+                if 'alert_rules' in config_data:
+                    rules_file = BARBOSSA_DIR / 'config' / 'alert_rules.json'
+                    os.makedirs(rules_file.parent, exist_ok=True)
+                    with open(rules_file, 'w') as f:
+                        json.dump(config_data['alert_rules'], f, indent=2)
+                    results.append('Alert rules imported successfully')
+                
+                # Import workflows
+                if 'workflows' in config_data:
+                    workflows_file = BARBOSSA_DIR / 'config' / 'workflows.json'
+                    os.makedirs(workflows_file.parent, exist_ok=True)
+                    with open(workflows_file, 'w') as f:
+                        json.dump(config_data['workflows'], f, indent=2)
+                    results.append('Workflows imported successfully')
+        
+        return jsonify({
+            'success': True,
+            'message': 'Import completed',
+            'results': results,
+            'imported_by': session.get('username'),
+            'imported_at': datetime.now().isoformat()
+        })
+        
+    except json.JSONDecodeError:
+        return jsonify({'error': 'Invalid JSON file'}), 400
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# API Key/Token Management
+@app.route('/api/auth/tokens', methods=['GET', 'POST'])
+@auth.login_required
+def api_auth_tokens():
+    """Manage API authentication tokens"""
+    tokens_file = BARBOSSA_DIR / 'config' / 'api_tokens.json'
+    
+    if request.method == 'GET':
+        if tokens_file.exists():
+            try:
+                with open(tokens_file, 'r') as f:
+                    tokens_data = json.load(f)
+                
+                # Return token info without revealing actual tokens
+                token_info = []
+                for token_id, token_data in tokens_data.items():
+                    token_info.append({
+                        'id': token_id,
+                        'name': token_data.get('name', 'Unnamed'),
+                        'created_by': token_data.get('created_by'),
+                        'created_at': token_data.get('created_at'),
+                        'expires_at': token_data.get('expires_at'),
+                        'permissions': token_data.get('permissions', []),
+                        'last_used': token_data.get('last_used'),
+                        'active': token_data.get('active', True)
+                    })
+                
+                return jsonify({'tokens': token_info})
+            except Exception as e:
+                return jsonify({'error': f'Could not load tokens: {str(e)}'}), 500
+        else:
+            return jsonify({'tokens': []})
+    
+    else:  # POST - Create new token
+        data = request.json
+        token_name = data.get('name')
+        permissions = data.get('permissions', ['read'])
+        expires_days = data.get('expires_days', 30)
+        
+        if not token_name:
+            return jsonify({'error': 'Token name required'}), 400
+        
+        try:
+            # Generate token
+            import secrets
+            token_id = secrets.token_hex(8)
+            api_token = secrets.token_urlsafe(32)
+            
+            # Calculate expiration
+            expires_at = (datetime.now() + timedelta(days=expires_days)).isoformat()
+            
+            # Load existing tokens
+            if tokens_file.exists():
+                with open(tokens_file, 'r') as f:
+                    tokens_data = json.load(f)
+            else:
+                tokens_data = {}
+            
+            # Add new token
+            tokens_data[token_id] = {
+                'name': token_name,
+                'token_hash': generate_password_hash(api_token),  # Store hash, not token
+                'created_by': session.get('username'),
+                'created_at': datetime.now().isoformat(),
+                'expires_at': expires_at,
+                'permissions': permissions,
+                'active': True,
+                'last_used': None
+            }
+            
+            # Save tokens
+            os.makedirs(tokens_file.parent, exist_ok=True)
+            with open(tokens_file, 'w') as f:
+                json.dump(tokens_data, f, indent=2)
+            
+            # Set restrictive permissions
+            os.chmod(tokens_file, 0o600)
+            
+            return jsonify({
+                'success': True,
+                'message': 'API token created successfully',
+                'token_id': token_id,
+                'token': api_token,  # Only return this once
+                'expires_at': expires_at,
+                'warning': 'Save this token securely. It will not be shown again.'
+            })
+            
+        except Exception as e:
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/api/auth/tokens/<token_id>', methods=['DELETE', 'PATCH'])
+@auth.login_required
+def api_auth_token_manage(token_id):
+    """Manage specific API token"""
+    tokens_file = BARBOSSA_DIR / 'config' / 'api_tokens.json'
+    
+    if not tokens_file.exists():
+        return jsonify({'error': 'No tokens found'}), 404
+    
+    try:
+        with open(tokens_file, 'r') as f:
+            tokens_data = json.load(f)
+        
+        if token_id not in tokens_data:
+            return jsonify({'error': 'Token not found'}), 404
+        
+        if request.method == 'DELETE':
+            # Delete token
+            del tokens_data[token_id]
+            
+            with open(tokens_file, 'w') as f:
+                json.dump(tokens_data, f, indent=2)
+            
+            return jsonify({
+                'success': True,
+                'message': f'Token {token_id} deleted successfully'
+            })
+        
+        elif request.method == 'PATCH':
+            # Update token (e.g., deactivate/activate)
+            data = request.json
+            
+            if 'active' in data:
+                tokens_data[token_id]['active'] = bool(data['active'])
+            
+            if 'permissions' in data:
+                tokens_data[token_id]['permissions'] = data['permissions']
+            
+            with open(tokens_file, 'w') as f:
+                json.dump(tokens_data, f, indent=2)
+            
+            return jsonify({
+                'success': True,
+                'message': f'Token {token_id} updated successfully'
+            })
+            
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Webhook Management
+@app.route('/api/webhooks', methods=['GET', 'POST'])
+@auth.login_required  
+def api_webhooks():
+    """Manage webhooks for external integrations"""
+    webhooks_file = BARBOSSA_DIR / 'config' / 'webhooks.json'
+    
+    if request.method == 'GET':
+        if webhooks_file.exists():
+            with open(webhooks_file, 'r') as f:
+                webhooks = json.load(f)
+        else:
+            webhooks = {}
+        
+        return jsonify({'webhooks': webhooks})
+    
+    else:  # POST - Create webhook
+        data = request.json
+        webhook_id = data.get('id')
+        webhook_config = data.get('config')
+        
+        if not webhook_id or not webhook_config:
+            return jsonify({'error': 'Webhook ID and config required'}), 400
+        
+        # Validate webhook config
+        required_fields = ['name', 'url', 'events']
+        for field in required_fields:
+            if field not in webhook_config:
+                return jsonify({'error': f'Missing required field: {field}'}), 400
+        
+        # Load existing webhooks
+        if webhooks_file.exists():
+            with open(webhooks_file, 'r') as f:
+                webhooks = json.load(f)
+        else:
+            webhooks = {}
+        
+        # Add webhook metadata
+        webhook_config['created_at'] = datetime.now().isoformat()
+        webhook_config['created_by'] = session.get('username')
+        webhook_config['active'] = webhook_config.get('active', True)
+        webhook_config['delivery_count'] = 0
+        webhook_config['last_delivery'] = None
+        
+        webhooks[webhook_id] = webhook_config
+        
+        # Save webhooks
+        os.makedirs(webhooks_file.parent, exist_ok=True)
+        with open(webhooks_file, 'w') as f:
+            json.dump(webhooks, f, indent=2)
+        
+        return jsonify({
+            'success': True,
+            'message': f'Webhook {webhook_id} created successfully'
+        })
 
 @app.route('/health')
 def health():
