@@ -63,6 +63,16 @@ if WORKFLOW_API_AVAILABLE:
     app.register_blueprint(workflow_api)
     print("Workflow API registered")
 
+# Register enhanced API blueprint
+try:
+    from enhanced_api import enhanced_api
+    app.register_blueprint(enhanced_api)
+    print("Enhanced API v2 registered")
+    ENHANCED_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import enhanced API: {e}")
+    ENHANCED_API_AVAILABLE = False
+
 # Enable JSON minification for better performance
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 

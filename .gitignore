@@ -61,3 +61,7 @@ test_*.db*
 
 # Temporary prompts
 temp_prompt.txt
+
+# Changelog files
+changelogs/*.md
+changelogs/*.txt

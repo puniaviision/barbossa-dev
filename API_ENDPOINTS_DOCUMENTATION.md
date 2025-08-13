@@ -1,8 +1,8 @@
-# Barbossa Enhanced API Endpoints Documentation
+# Barbossa Enhanced API v2.0 Documentation
 
 ## Overview
 
-This document details the new API endpoints implemented for the Barbossa Enhanced system. These endpoints provide advanced functionality for task management, performance optimization, system integration, and workflow automation.
+This document details the comprehensive API endpoints implemented for the Barbossa Enhanced system. Version 2.0 introduces significant new functionality including log management, configuration control, notification systems, service management, and metrics tracking, while maintaining full backward compatibility.
 
 ## Authentication
 
@@ -16,7 +16,261 @@ All endpoints require authentication via HTTP Basic Auth or session-based authen
 - `500`: Internal Server Error
 - `503`: Service Unavailable (required service not running)
 
-## New API Endpoints
+**Base URL**: `/api/v2`
+**Current Version**: `2.0.0`
+**Total Endpoints**: 25+ across 8 functional areas
+
+## New API Endpoints (v2.0)
+
+### 🗂️ Log Management API
+
+#### GET `/logs`
+Get system logs with comprehensive filtering and pagination.
+
+**Query Parameters:**
+- `type` (string): Log type filter - `all`, `barbossa`, `security`, `system` (default: `all`)
+- `level` (string): Log level filter - `DEBUG`, `INFO`, `WARNING`, `ERROR`, `CRITICAL`
+- `limit` (integer): Number of entries to return (default: 100)
+- `offset` (integer): Number of entries to skip (default: 0)
+- `search` (string): Search term to filter log messages
+- `start_date` (string): Filter logs from this date (ISO format)
+- `end_date` (string): Filter logs until this date (ISO format)
+
+**Response:**
+```json
+{
+  "logs": [
+    {
+      "timestamp": "2024-01-01T12:00:00",
+      "level": "INFO",
+      "message": "System started successfully",
+      "file": "barbossa_20240101.log",
+      "line_number": 42,
+      "type": "barbossa"
+    }
+  ],
+  "total": 150,
+  "limit": 100,
+  "offset": 0,
+  "has_more": true,
+  "filters": {...},
+  "status": "success"
+}
+```
+
+#### GET `/logs/files`
+Get list of available log files with metadata.
+
+**Response:**
+```json
+{
+  "log_files": [
+    {
+      "name": "barbossa_20240101.log",
+      "path": "/path/to/logs/barbossa_20240101.log",
+      "type": "system",
+      "size": 102400,
+      "modified": "2024-01-01T12:00:00",
+      "lines": 500
+    }
+  ],
+  "total": 10,
+  "status": "success"
+}
+```
+
+#### POST `/logs/clear`
+Clear old log files with safety options.
+
+**Request Body:**
+```json
+{
+  "days_older_than": 30,
+  "file_types": ["system", "security"],
+  "dry_run": true
+}
+```
+
+**Response:**
+```json
+{
+  "files_to_remove": [
+    {
+      "file": "/path/to/old.log",
+      "size": 1024,
+      "modified": "2023-12-01T00:00:00"
+    }
+  ],
+  "total_files": 5,
+  "total_size_freed": 51200,
+  "dry_run": true,
+  "status": "success"
+}
+```
+
+### ⚙️ Configuration Management API
+
+#### GET `/config`
+Get system configuration with sanitized environment variables.
+
+**Response:**
+```json
+{
+  "configuration": {
+    "repository_whitelist": {
+      "allowed_repositories": ["github.com/ADWilkinson/*"]
+    },
+    "work_tally": {
+      "infrastructure": 10,
+      "personal_projects": 8,
+      "davy_jones": 5
+    },
+    "environment": {
+      "HOME": "/home/user",
+      "ANTHROPIC_API_KEY": "***HIDDEN***"
+    }
+  },
+  "status": "success"
+}
+```
+
+#### GET `/config/{config_name}`
+Get specific configuration file.
+
+#### PUT `/config/{config_name}`
+Update specific configuration file with automatic backup.
+
+### 🔔 Notification/Alert API
+
+#### GET `/notifications`
+Get system notifications with filtering and pagination.
+
+**Query Parameters:**
+- `limit` (integer): Number of notifications (default: 50)
+- `offset` (integer): Pagination offset (default: 0)
+- `severity` (string): Filter by severity - `info`, `warning`, `error`, `critical`
+- `read` (boolean): Filter by read status - `true`, `false`
+
+#### POST `/notifications`
+Create a new notification.
+
+**Request Body:**
+```json
+{
+  "title": "Custom Alert",
+  "message": "Something important happened",
+  "severity": "info",
+  "category": "custom",
+  "metadata": {"source": "api"}
+}
+```
+
+#### PUT `/notifications/{notification_id}/read`
+Mark notification as read.
+
+### 🔧 Service Control API
+
+#### GET `/services`
+Get system services status and Barbossa processes.
+
+**Response:**
+```json
+{
+  "system_services": [
+    {
+      "name": "docker",
+      "status": "active",
+      "description": "Docker Application Container Engine",
+      "load_state": "loaded",
+      "active_state": "active",
+      "sub_state": "running"
+    }
+  ],
+  "barbossa_processes": [
+    {
+      "pid": 1234,
+      "name": "python3",
+      "cmdline": "python3 barbossa.py",
+      "status": "running"
+    }
+  ],
+  "status": "success"
+}
+```
+
+#### POST `/services/{service_name}/{action}`
+Control system services (restricted to safe services).
+
+**Allowed Services:** `docker`, `nginx`, `cloudflared`
+**Allowed Actions:** `start`, `stop`, `restart`, `reload`
+
+### 📊 Metrics History API
+
+#### GET `/metrics/history`
+Get historical system metrics with filtering.
+
+**Query Parameters:**
+- `start_date` (string): Start date filter (ISO format)
+- `end_date` (string): End date filter (ISO format)
+- `type` (string): Metric type - `cpu`, `memory`, `disk`, `network`, `all`
+- `interval` (string): Data interval - `minute`, `hour`, `day`
+
+#### POST `/metrics/store`
+Store current system metrics for historical tracking.
+
+**Response includes:**
+- Current CPU, memory, disk, and network metrics
+- Timestamp and storage confirmation
+- Database integration for historical analysis
+
+## Enhanced Existing Endpoints
+
+### System Monitoring (Enhanced)
+
+#### GET `/system/metrics`
+Enhanced with Barbossa-specific metrics including:
+- Active Claude processes
+- Last execution timestamps
+- Work area statistics
+- Enhanced hardware monitoring
+
+#### GET `/system/health`
+Comprehensive health checks including:
+- Barbossa service responsiveness
+- Security guard status
+- Repository access validation
+- System resource thresholds
+
+#### GET `/system/processes`
+Detailed process information with filtering capabilities.
+
+### Project & Task Management (Enhanced)
+
+#### GET/POST `/projects`
+Full CRUD operations for project management with:
+- Advanced filtering and search
+- Repository security validation
+- Tag and metadata support
+- Pagination and sorting
+
+#### GET/POST `/tasks`
+Comprehensive task management with:
+- Project relationship tracking
+- Dependency management
+- Status workflow automation
+- Priority and assignment systems
+
+### Security & Audit (Enhanced)
+
+#### GET `/security/audit`
+Enhanced security audit with:
+- Detailed violation tracking
+- Repository access monitoring
+- Timestamp-based filtering
+- Severity classification
+
+#### POST `/security/scan`
+On-demand security scanning with configurable depth.
 
 ### 1. Task Scheduling and Management
 
