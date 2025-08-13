@@ -560,7 +560,9 @@
         // Load workflows
         async function loadWorkflows() {
             try {
-                const response = await fetch('/api/workflows/');
+                const response = await fetch('/api/workflows/', {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 
                 if (data.workflows) {
@@ -657,7 +659,9 @@
         // Load templates
         async function loadTemplates() {
             try {
-                const response = await fetch('/api/workflows/templates');
+                const response = await fetch('/api/workflows/templates', {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 
                 if (data.templates) {
@@ -680,7 +684,8 @@
             try {
                 addTerminalLine(`Executing workflow ${workflowId}...`);
                 const response = await fetch(`/api/workflows/${workflowId}/run`, {
-                    method: 'POST'
+                    method: 'POST',
+                    credentials: 'include'
                 });
                 const data = await response.json();
                 
@@ -698,7 +703,9 @@
         // View workflow details
         async function viewWorkflow(workflowId) {
             try {
-                const response = await fetch(`/api/workflows/${workflowId}`);
+                const response = await fetch(`/api/workflows/${workflowId}`, {
+                    credentials: 'include'
+                });
                 const data = await response.json();
                 
                 if (data.workflow) {
@@ -715,7 +722,8 @@
             
             try {
                 const response = await fetch(`/api/workflows/${workflowId}`, {
-                    method: 'DELETE'
+                    method: 'DELETE',
+                    credentials: 'include'
                 });
                 const data = await response.json();
                 
@@ -773,6 +781,7 @@
                     headers: {
                         'Content-Type': 'application/json'
                     },
+                    credentials: 'include',
                     body: JSON.stringify(workflowData)
                 });
                 const data = await response.json();

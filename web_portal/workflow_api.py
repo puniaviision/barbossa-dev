@@ -46,7 +46,14 @@ def get_workflow_engine():
             workflow_engine = WorkflowEngine(work_dir)
         return workflow_engine
 
-@workflow_api.route('/', methods=['GET'])
+@workflow_api.route('/', methods=['GET', 'POST'])
+def list_or_create_workflows():
+    """List all workflows or create a new one"""
+    if request.method == 'GET':
+        return list_workflows()
+    else:  # POST
+        return create_workflow()
+
 def list_workflows():
     """List all workflows"""
     try:
@@ -139,6 +146,10 @@ def get_workflow_template(template_name):
         }), 500
 
 @workflow_api.route('/create', methods=['POST'])
+def create_workflow_endpoint():
+    """Create workflow endpoint wrapper"""
+    return create_workflow()
+
 def create_workflow():
     """Create a new workflow from template or configuration"""
     try:
@@ -187,6 +198,84 @@ def create_workflow():
         return jsonify({
             'error': str(e)
         }), 500
+
+@workflow_api.route('/<workflow_id>', methods=['GET'])
+def get_workflow(workflow_id):
+    """Get workflow details"""
+    try:
+        engine = get_workflow_engine()
+        if not engine:
+            return jsonify({
+                'error': 'Workflow engine not available'
+            }), 503
+        
+        # Try to get workflow status
+        workflow_data = engine.get_workflow_status(workflow_id)
+        
+        if not workflow_data:
+            # Try to load from saved workflows
+            workflows = engine.list_workflows()
+            workflow_data = next((w for w in workflows if w.get('id') == workflow_id or w.get('workflow_id') == workflow_id), None)
+        
+        if not workflow_data:
+            return jsonify({
+                'error': f'Workflow {workflow_id} not found'
+            }), 404
+        
+        return jsonify({
+            'workflow': workflow_data,
+            'status': 'success'
+        })
+    
+    except Exception as e:
+        logging.error(f"Error getting workflow {workflow_id}: {e}")
+        return jsonify({
+            'error': str(e)
+        }), 500
+
+@workflow_api.route('/<workflow_id>', methods=['DELETE'])
+def delete_workflow(workflow_id):
+    """Delete a workflow"""
+    try:
+        engine = get_workflow_engine()
+        if not engine:
+            return jsonify({
+                'error': 'Workflow engine not available'
+            }), 503
+        
+        # Check if workflow exists
+        workflow_data = engine.get_workflow_status(workflow_id)
+        
+        if workflow_data and workflow_data.get('status') == 'running':
+            return jsonify({
+                'error': 'Cannot delete running workflow. Please cancel it first.'
+            }), 400
+        
+        # Delete workflow file if it exists
+        workflow_dir = Path.home() / 'barbossa-engineer' / 'workflows'
+        workflow_file = workflow_dir / f'{workflow_id}.yaml'
+        
+        if workflow_file.exists():
+            workflow_file.unlink()
+            return jsonify({
+                'success': True,
+                'message': f'Workflow {workflow_id} deleted successfully'
+            })
+        else:
+            return jsonify({
+                'error': f'Workflow {workflow_id} not found'
+            }), 404
+    
+    except Exception as e:
+        logging.error(f"Error deleting workflow {workflow_id}: {e}")
+        return jsonify({
+            'error': str(e)
+        }), 500
+
+@workflow_api.route('/<workflow_id>/run', methods=['POST'])
+def run_workflow(workflow_id):
+    """Run a workflow (alias for execute)"""
+    return execute_workflow(workflow_id)
 
 @workflow_api.route('/<workflow_id>/execute', methods=['POST'])
 def execute_workflow(workflow_id):
