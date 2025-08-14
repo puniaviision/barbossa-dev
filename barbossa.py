@@ -191,13 +191,71 @@ class BarbossaEnhanced:
         # System info
         self.system_info = self._get_system_info()
         
+        # Initialize API client for new portal features
+        self.portal_api_base = "https://localhost:8443"
+        self.api_available = self._check_api_availability()
+        
         self.logger.info("=" * 70)
         self.logger.info(f"BARBOSSA ENHANCED v{self.VERSION} - Comprehensive Server Management")
         self.logger.info(f"Working directory: {self.work_dir}")
         self.logger.info(f"Platform: {self.system_info['platform']}")
         self.logger.info(f"Server Manager: {'Active' if self.server_manager else 'Inactive'}")
+        self.logger.info(f"Portal APIs: {'Available' if self.api_available else 'Not Available'}")
         self.logger.info("Security: MAXIMUM - ZKP2P access BLOCKED")
         self.logger.info("=" * 70)
+    
+    def _check_api_availability(self):
+        """Check if the new portal APIs are available"""
+        try:
+            import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            # Test if advanced API v3 is available
+            response = requests.get(f"{self.portal_api_base}/api/v3/health", 
+                                   verify=False, timeout=5)
+            if response.status_code == 200:
+                return True
+        except Exception:
+            pass
+        return False
+    
+    def get_performance_score(self):
+        """Get system performance score from the new API"""
+        if not self.api_available:
+            return None
+        
+        try:
+            import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            response = requests.get(f"{self.portal_api_base}/api/v3/analytics/performance-score",
+                                   verify=False, timeout=10)
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            self.logger.warning(f"Could not get performance score: {e}")
+        return None
+    
+    def create_backup(self, backup_type="config"):
+        """Create a backup using the new API"""
+        if not self.api_available:
+            return None
+        
+        try:
+            import requests
+            import urllib3
+            urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+            
+            response = requests.post(f"{self.portal_api_base}/api/v3/backup/create",
+                                    json={"backup_type": backup_type, "compress": True},
+                                    verify=False, timeout=30)
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            self.logger.warning(f"Could not create backup: {e}")
+        return None
     
     def _setup_logging(self):
         """Configure comprehensive logging"""
@@ -348,6 +406,24 @@ class BarbossaEnhanced:
         """Execute advanced infrastructure management tasks"""
         self.logger.info("Executing infrastructure management...")
         
+        # Use new API features if available
+        if self.api_available:
+            perf_score = self.get_performance_score()
+            if perf_score:
+                self.logger.info(f"API Performance Score: {perf_score['overall_score']}/100 - {perf_score['overall_status']}")
+                
+                # Log recommendations if any
+                if perf_score.get('recommendations'):
+                    for rec in perf_score['recommendations']:
+                        self.logger.info(f"  Recommendation: {rec}")
+                
+                # Auto-backup on good health
+                if perf_score['overall_score'] > 85 and datetime.now().hour == 3:  # 3 AM backups
+                    self.logger.info("Creating automated backup...")
+                    backup = self.create_backup("config")
+                    if backup and backup.get('success'):
+                        self.logger.info(f"Backup created: {backup['backup']['name']}")
+        
         # Perform health check first
         health = self.perform_system_health_check()
         self.logger.info(f"System health: {health['status']}")
@@ -438,11 +514,11 @@ BARBOSSA COMPONENTS:
 5. Security Guard: ~/barbossa-engineer/security_guard.py
 
 IMPROVEMENT AREAS:
-- Add new monitoring capabilities
+- Add new monitoring capabilities (Now available via Portal APIs!)
 - Enhance dashboard visualizations
-- Implement new API endpoints
-- Optimize performance
-- Add automation features
+- Implement new API endpoints (Advanced API v3 now available!)
+- Optimize performance (Performance scoring now available!)
+- Add automation features (Workflow automation now available!)
 - Improve error handling
 - Enhance security measures
 

@@ -73,6 +73,36 @@ except ImportError as e:
     print(f"Warning: Could not import enhanced API: {e}")
     ENHANCED_API_AVAILABLE = False
 
+# Register advanced API blueprint
+try:
+    from advanced_api import advanced_api
+    app.register_blueprint(advanced_api)
+    print("Advanced API v3 registered")
+    ADVANCED_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import advanced API: {e}")
+    ADVANCED_API_AVAILABLE = False
+
+# Register monitoring API blueprint
+try:
+    from monitoring_api import monitoring_api
+    app.register_blueprint(monitoring_api)
+    print("Monitoring API registered")
+    MONITORING_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import monitoring API: {e}")
+    MONITORING_API_AVAILABLE = False
+
+# Register development tools API blueprint
+try:
+    from devtools_api import devtools_api
+    app.register_blueprint(devtools_api)
+    print("Development Tools API registered")
+    DEVTOOLS_API_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import development tools API: {e}")
+    DEVTOOLS_API_AVAILABLE = False
+
 # Enable JSON minification for better performance
 app.config['JSONIFY_PRETTYPRINT_REGULAR'] = False
 
