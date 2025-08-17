@@ -53,6 +53,16 @@ try:
 except ImportError as e:
     print(f"Warning: Could not import enhanced security: {e}")
     ENHANCED_SECURITY_AVAILABLE = False
+    enhanced_security = None
+    
+# Import Barbossa Prompt Manager
+try:
+    from barbossa_prompt_api import BarbossaPromptManager
+    PROMPT_MANAGER_AVAILABLE = True
+except ImportError as e:
+    print(f"Warning: Could not import barbossa_prompt_api: {e}")
+    PROMPT_MANAGER_AVAILABLE = False
+    ENHANCED_SECURITY_AVAILABLE = False
 
 app = Flask(__name__)
 app.secret_key = secrets.token_hex(32)
@@ -195,6 +205,16 @@ if SERVER_MANAGER_AVAILABLE:
     except Exception as e:
         print(f"Error initializing server manager: {e}")
         server_manager = None
+
+# Initialize Barbossa Prompt Manager if available
+prompt_manager = None
+if PROMPT_MANAGER_AVAILABLE:
+    try:
+        prompt_manager = BarbossaPromptManager(BARBOSSA_DIR, BARBOSSA_DIR / 'logs')
+        print("Barbossa Prompt Manager initialized")
+    except Exception as e:
+        print(f"Error initializing prompt manager: {e}")
+        prompt_manager = None
 
 # Initialize enhanced security if available
 enhanced_security = None
@@ -2751,6 +2771,110 @@ def api_webhooks():
             'success': True,
             'message': f'Webhook {webhook_id} created successfully'
         })
+
+# Custom Barbossa Prompt API Endpoints
+@app.route('/api/barbossa/custom-prompt', methods=['POST'])
+@auth.login_required
+def api_barbossa_custom_prompt():
+    """Create a custom Barbossa prompt session"""
+    if not prompt_manager:
+        return jsonify({'success': False, 'error': 'Prompt manager not available'}), 503
+    
+    data = request.json
+    prompt = data.get('prompt')
+    repository = data.get('repository')
+    task_type = data.get('task_type', 'custom')
+    
+    if not prompt:
+        return jsonify({'success': False, 'error': 'Prompt is required'}), 400
+    
+    try:
+        result = prompt_manager.create_custom_session(prompt, repository, task_type)
+        return jsonify(result), 200 if result['success'] else 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/barbossa/session/<session_id>')
+@auth.login_required
+def api_barbossa_session_status(session_id):
+    """Get status and output of a Barbossa session"""
+    if not prompt_manager:
+        return jsonify({'success': False, 'error': 'Prompt manager not available'}), 503
+    
+    try:
+        result = prompt_manager.get_session_status(session_id)
+        return jsonify(result), 200 if result['success'] else 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/barbossa/session/<session_id>/stream')
+@auth.login_required
+def api_barbossa_session_stream(session_id):
+    """Get streaming output from a Barbossa session"""
+    if not prompt_manager:
+        return jsonify({'success': False, 'error': 'Prompt manager not available'}), 503
+    
+    offset = request.args.get('offset', 0, type=int)
+    
+    try:
+        result = prompt_manager.get_session_output_stream(session_id, offset)
+        return jsonify(result), 200 if result['success'] else 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/barbossa/sessions')
+@auth.login_required
+def api_barbossa_sessions():
+    """List all Barbossa sessions"""
+    if not prompt_manager:
+        return jsonify({'success': False, 'error': 'Prompt manager not available'}), 503
+    
+    limit = request.args.get('limit', 10, type=int)
+    
+    try:
+        sessions = prompt_manager.list_sessions(limit)
+        return jsonify({'success': True, 'sessions': sessions})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/barbossa/allowed-repositories')
+@auth.login_required
+def api_barbossa_allowed_repositories():
+    """Get list of allowed repositories from whitelist"""
+    try:
+        whitelist_file = BARBOSSA_DIR / 'config' / 'repository_whitelist.json'
+        if whitelist_file.exists():
+            with open(whitelist_file, 'r') as f:
+                whitelist = json.load(f)
+                repositories = whitelist.get('allowed_repositories', [])
+                # Add friendly names
+                repo_list = []
+                for repo in repositories:
+                    parts = repo.split('/')
+                    if len(parts) == 2:
+                        repo_list.append({
+                            'url': f'https://github.com/{repo}',
+                            'name': parts[1],
+                            'full_name': repo
+                        })
+                return jsonify({'success': True, 'repositories': repo_list})
+        else:
+            return jsonify({'success': False, 'error': 'Whitelist not found'}), 404
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/barbossa/session/<session_id>/terminate', methods=['POST'])
+@auth.login_required
+def api_barbossa_session_terminate(session_id):
+    """Terminate a running Barbossa session"""
+    if not prompt_manager:
+        return jsonify({'success': False, 'error': 'Prompt manager not available'}), 503
+    
+    try:
+        result = prompt_manager.terminate_session(session_id)
+        return jsonify(result), 200 if result['success'] else 400
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 @app.route('/health')
 def health():

@@ -1,38 +1,37 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-black">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Barbossa Control Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        'mono': ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        'terminal': '#00ff00',
+                        'terminal-dim': '#00aa00',
+                    },
+                    animation: {
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        /* Minimal terminal effects */
+        body { 
+            text-shadow: 0 0 2px rgba(0, 255, 0, 0.5);
+            font-family: 'JetBrains Mono', monospace;
         }
         
-        @import url('https://fonts.googleapis.com/css2?family=VT323&family=Share+Tech+Mono&display=swap');
-        
-        body {
-            font-family: 'VT323', 'Share Tech Mono', 'Courier New', 'Consolas', 'Monaco', monospace;
-            background: #000000;
-            background-image: 
-                repeating-linear-gradient(
-                    0deg,
-                    rgba(0, 255, 0, 0.03),
-                    rgba(0, 255, 0, 0.03) 1px,
-                    transparent 1px,
-                    transparent 2px
-                );
-            color: #00ff00;
-            min-height: 100vh;
-            line-height: 1.4;
-            font-size: 14px;
-            overflow-x: hidden;
-            text-shadow: 0 0 1px rgba(0, 255, 0, 0.5);
-        }
-        
-        /* Terminal scanline effect with flicker */
+        /* Scanline effect */
         body::before {
             content: "";
             position: fixed;
@@ -40,601 +39,42 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: 
-                linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%),
-                linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
-            z-index: 2;
-            background-size: 100% 2px, 3px 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%);
+            z-index: 1;
+            background-size: 100% 2px;
             pointer-events: none;
-            animation: scanline 10s linear infinite, flicker 0.15s infinite;
-        }
-        
-        @keyframes flicker {
-            0% { opacity: 0.97; }
-            5% { opacity: 1; }
-            10% { opacity: 0.98; }
-            100% { opacity: 1; }
+            animation: scanline 8s linear infinite;
         }
         
         @keyframes scanline {
             0% { transform: translateY(0); }
             100% { transform: translateY(10px); }
         }
-
-        .header {
-            background: #000000;
-            padding: 10px 15px;
-            border-bottom: 1px solid #333333;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            font-family: 'Courier New', monospace;
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
         }
         
-        .header h1 {
-            color: #00ff00;
-            font-size: 20px;
-            font-weight: normal;
-            text-transform: uppercase;
-            letter-spacing: 3px;
-            border-right: 2px solid #00ff00;
-            padding-right: 10px;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-            animation: pulse 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.8; }
-        }
-        
-        .header .status-info {
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            font-size: 14px;
-        }
-        
-        /* Navigation Bar */
-        .navbar {
-            background: #000000;
-            padding: 8px 15px;
-            border-bottom: 1px solid #00ff00;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-            position: sticky;
-            top: 51px;
-            z-index: 999;
-        }
-        
-        .navbar a {
-            color: #00ff00;
-            text-decoration: none;
-            padding: 5px 15px;
-            border: 1px solid #00ff00;
-            background: rgba(0, 255, 0, 0.05);
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            font-size: 12px;
-            letter-spacing: 1px;
-        }
-        
-        .navbar a:hover {
-            background: rgba(0, 255, 0, 0.2);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.5);
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-        }
-        
-        .navbar a.active {
-            background: rgba(0, 255, 0, 0.3);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.7);
-        }
-        
-        .status-badge {
-            padding: 3px 6px;
-            border-radius: 0;
-            font-size: 10px;
-            font-weight: normal;
-            text-transform: uppercase;
-            font-family: 'Courier New', monospace;
-            letter-spacing: 1px;
-            border: 1px solid;
-        }
-        
-        .status-online { 
-            background: #000; 
-            color: #00ff00; 
-            border-color: #00ff00;
-            text-shadow: 0 0 3px #00ff00;
-        }
-        .status-offline { 
-            background: #000; 
-            color: #ff0000; 
-            border-color: #ff0000;
-            text-shadow: 0 0 3px #ff0000;
-        }
-        .status-working { 
-            background: #000; 
-            color: #ffff00; 
-            border-color: #ffff00;
-            text-shadow: 0 0 3px #ffff00;
-        }
-
-        .container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 10px;
-            padding: 10px;
-            max-width: 1600px;
-            margin: 0 auto;
-        }
-        
-        .card {
-            background: rgba(0, 0, 0, 0.9);
-            border: 1px solid #00ff00;
-            border-radius: 0;
-            padding: 10px;
-            position: relative;
-            box-shadow: 
-                0 0 20px rgba(0, 255, 0, 0.1),
-                inset 0 0 20px rgba(0, 255, 0, 0.05);
-            transition: all 0.3s ease;
-        }
-        
-        .card::before {
-            content: '';
-            position: absolute;
-            top: -1px;
-            left: -1px;
-            right: -1px;
-            bottom: -1px;
-            background: linear-gradient(45deg, #00ff00, transparent, #00ff00);
-            z-index: -1;
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-        
-        .card:hover {
-            border-color: #00ff00;
-            box-shadow: 
-                0 0 30px rgba(0, 255, 0, 0.3),
-                inset 0 0 30px rgba(0, 255, 0, 0.1);
-        }
-        
-        .card:hover::before {
-            opacity: 0.1;
-        }
-        
-        .card h2 {
-            color: #00ff00;
-            margin-bottom: 10px;
-            font-size: 14px;
-            border-bottom: 1px solid #00ff00;
-            padding-bottom: 5px;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            position: relative;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
-        }
-        
-        .card h2::before {
-            content: '▓▓ ';
-            color: #00ff00;
-            margin-right: 5px;
-            animation: blink 1s infinite;
-        }
-        
-        .card h2::after {
-            content: ' ▓▓';
-            color: #00ff00;
-            margin-left: 5px;
-            animation: blink 1s infinite;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-        
-        .stat-box {
-            background: rgba(0, 20, 0, 0.5);
-            border: 1px solid #00ff00;
-            padding: 8px;
-            text-align: center;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.2s ease;
-        }
-        
-        .stat-box:hover {
-            background: rgba(0, 40, 0, 0.7);
-            transform: scale(1.02);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.4);
-        }
-        
-        .stat-box::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            animation: scan 3s linear infinite;
-        }
-        
-        @keyframes scan {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        
-        .stat-box .value {
-            font-size: 18px;
-            font-weight: bold;
-            color: #00ff00;
-            font-family: 'VT323', monospace;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.9);
-            letter-spacing: 1px;
-        }
-        
-        .stat-box .label {
-            font-size: 9px;
-            color: #999999;
-            margin-top: 2px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-        }
-
-        .log-viewer {
-            background: linear-gradient(180deg, rgba(0, 20, 0, 0.8) 0%, rgba(0, 10, 0, 0.9) 100%);
-            border: 1px solid #00ff00;
-            padding: 10px;
-            padding-top: 15px; /* Extra padding to prevent cropping */
-            height: 200px;
-            overflow-y: auto;
-            font-size: 12px;
-            font-family: 'Share Tech Mono', monospace;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            position: relative;
-            box-shadow: inset 0 0 20px rgba(0, 255, 0, 0.1);
-            margin-top: 5px; /* Add margin to prevent overlap */
-        }
-        
-        .log-viewer::before {
-            content: '▓ LOGS ▓';
-            position: absolute;
-            top: -12px;
-            left: 10px;
+        ::-webkit-scrollbar-track {
             background: #000;
-            padding: 0 8px;
-            color: #00ff00;
-            font-size: 12px;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.8);
-            animation: pulse 2s infinite;
-            z-index: 10;
-        }
-        
-        .log-entry {
-            padding: 4px 6px;
-            border-bottom: 1px solid rgba(0, 255, 0, 0.1);
-            cursor: pointer;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            margin: 2px 0;
-            font-size: 11px;
-            font-family: 'Share Tech Mono', monospace;
-            position: relative;
-            transition: all 0.2s;
-            line-height: 1.4;
-            color: #00ff00;
-        }
-        
-        .log-entry::before {
-            content: '▸';
-            color: #00ff00;
-            margin-right: 8px;
-            transition: transform 0.2s;
-        }
-        
-        .log-entry:hover {
-            background: rgba(0, 255, 0, 0.1);
-            padding-left: 15px;
-            border-left: 3px solid #00ff00;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
-        }
-        
-        .log-entry:hover::before {
-            transform: rotate(90deg);
-        }
-        
-        .log-entry.error { 
-            color: #ff0000;
-            text-shadow: 0 0 3px #ff0000;
-        }
-        .log-entry.warning { 
-            color: #ffff00;
-            text-shadow: 0 0 3px #ffff00;
-        }
-        .log-entry.info { 
-            color: #00aaff;
-            text-shadow: 0 0 3px #00aaff;
-        }
-        .log-entry.success { 
-            color: #00ff00;
-            text-shadow: 0 0 3px #00ff00;
-        }
-
-        .button {
-            background: linear-gradient(180deg, rgba(0, 40, 0, 0.8) 0%, rgba(0, 20, 0, 0.9) 100%);
-            color: #00ff00;
             border: 1px solid #00ff00;
-            padding: 6px 12px;
-            cursor: pointer;
-            font-family: 'VT323', monospace;
-            font-size: 14px;
-            font-weight: normal;
-            text-transform: uppercase;
-            margin: 3px;
-            transition: all 0.2s;
-            position: relative;
-            overflow: hidden;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
-            letter-spacing: 1px;
         }
         
-        .button::before {
-            content: '▶';
-            margin-right: 6px;
-            transition: transform 0.2s;
-        }
-        
-        .button::after {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            width: 0;
-            height: 0;
-            background: rgba(0, 255, 0, 0.3);
-            border-radius: 50%;
-            transform: translate(-50%, -50%);
-            transition: width 0.3s, height 0.3s;
-        }
-        
-        .button:hover {
+        ::-webkit-scrollbar-thumb {
             background: #00ff00;
-            color: #000;
-            border-color: #00ff00;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.8);
-            transform: translateY(-1px);
-            text-shadow: none;
+            border: 1px solid #000;
         }
         
-        .button:hover::before {
-            transform: translateX(3px);
+        .terminal-border {
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.1), inset 0 0 20px rgba(0, 255, 0, 0.05);
         }
         
-        .button:active {
-            transform: translateY(0);
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.6);
+        .glow-text {
+            text-shadow: 0 0 5px currentColor;
         }
         
-        .button:active::after {
-            width: 100px;
-            height: 100px;
-        }
-        
-        .button.danger {
-            background: linear-gradient(180deg, rgba(40, 0, 0, 0.8) 0%, rgba(20, 0, 0, 0.9) 100%);
-            border-color: #ff0000;
-            color: #ff0000;
-            text-shadow: 0 0 5px rgba(255, 0, 0, 0.6);
-        }
-        
-        .button.danger:hover {
-            background: #ff0000;
-            color: #000;
-            box-shadow: 0 0 20px #ff0000;
-            text-shadow: none;
-        }
-        
-        .button.secondary {
-            background: linear-gradient(180deg, rgba(20, 20, 20, 0.8) 0%, rgba(10, 10, 10, 0.9) 100%);
-            border-color: #666666;
-            color: #999999;
-            text-shadow: 0 0 3px rgba(150, 150, 150, 0.5);
-        }
-        
-        .button.secondary:hover {
-            background: #666666;
-            color: #00ff00;
-            border-color: #999999;
-            box-shadow: 0 0 15px rgba(150, 150, 150, 0.6);
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
-        }
-
-        .process-list {
-            list-style: none;
-        }
-        
-        .process-item {
-            background: rgba(255,255,255,0.05);
-            border: 1px solid #333;
-            padding: 8px;
-            margin: 5px 0;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-        }
-        
-        .process-info {
-            flex: 1;
-        }
-        
-        .process-pid {
-            color: #00ff00;
-            font-weight: bold;
-        }
-
-        .work-tally {
-            display: flex;
-            justify-content: space-around;
-            margin: 15px 0;
-        }
-        
-        .work-area {
-            text-align: center;
-            padding: 10px;
-            background: linear-gradient(180deg, rgba(0, 40, 0, 0.3) 0%, rgba(0, 20, 0, 0.5) 100%);
-            border: 1px solid #00ff00;
-            flex: 1;
-            margin: 0 3px;
-            transition: all 0.3s ease;
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .work-area::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: -100%;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #00ff00, transparent);
-            animation: scan-work 3s linear infinite;
-        }
-        
-        @keyframes scan-work {
-            0% { left: -100%; }
-            100% { left: 100%; }
-        }
-        
-        .work-area:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 255, 0, 0.3);
-            background: linear-gradient(180deg, rgba(0, 60, 0, 0.4) 0%, rgba(0, 30, 0, 0.6) 100%);
-        }
-        
-        .work-area .count {
-            font-size: 20px;
-            font-weight: bold;
-            color: #00ff00;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.9);
-            font-family: 'VT323', monospace;
-            animation: pulse-number 2s ease-in-out infinite;
-        }
-        
-        @keyframes pulse-number {
-            0%, 100% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-        }
-        
-        .work-area .name {
-            font-size: 11px;
-            color: #00aa00;
-            margin-top: 5px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-family: 'Share Tech Mono', monospace;
-        }
-
-        .tabs {
-            display: flex;
-            border-bottom: 1px solid #333333;
-            margin-bottom: 10px;
-            background: #000;
-        }
-        
-        .tab {
-            padding: 8px 14px;
-            cursor: pointer;
-            background: rgba(0, 20, 0, 0.5);
-            border: 1px solid #00ff00;
-            border-bottom: none;
-            color: #666666;
-            margin-right: 2px;
-            transition: all 0.2s;
-            font-size: 12px;
-            text-transform: uppercase;
-            position: relative;
-            font-family: 'VT323', monospace;
-            letter-spacing: 1px;
-        }
-        
-        .tab::before {
-            content: '[';
-            margin-right: 3px;
-            color: #666666;
-        }
-        
-        .tab::after {
-            content: ']';
-            margin-left: 3px;
-            color: #666666;
-        }
-        
-        .tab:hover {
-            background: rgba(0, 255, 0, 0.1);
-            color: #00ff00;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
-        }
-        
-        .tab.active {
-            background: rgba(0, 40, 0, 0.8);
-            color: #00ff00;
-            border-color: #00ff00;
-            border-bottom: 1px solid transparent;
-            text-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
-            box-shadow: 0 -2px 10px rgba(0, 255, 0, 0.3);
-        }
-        
-        .tab-content {
-            display: none;
-            padding-top: 10px; /* Add padding to prevent content overlap */
-        }
-        
-        .tab-content.active {
-            display: block;
-        }
-
-        .search-box {
-            width: 100%;
-            padding: 6px 10px;
-            background: rgba(0, 20, 0, 0.5);
-            border: 1px solid #00ff00;
-            color: #00ff00;
-            margin-bottom: 10px;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            transition: all 0.2s;
-        }
-        
-        .search-box::placeholder {
-            color: #006600;
-            opacity: 0.7;
-        }
-        
-        .search-box:focus {
-            border-color: #00ff00;
-            outline: none;
-            background: rgba(0, 40, 0, 0.6);
-            box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
-            text-shadow: 0 0 3px rgba(0, 255, 0, 0.5);
-        }
-
         .modal {
             display: none;
             position: fixed;
@@ -642,1220 +82,938 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
-            z-index: 1000;
-        }
-        
-        .modal-content {
-            position: relative;
-            background: linear-gradient(180deg, rgba(0, 20, 0, 0.95) 0%, #000 100%);
-            margin: 30px auto;
-            padding: 20px;
-            width: 90%;
-            max-width: 1200px;
-            border: 2px solid #00ff00;
-            max-height: 85vh;
-            overflow-y: auto;
-            box-shadow: 
-                0 0 50px rgba(0, 255, 0, 0.4),
-                inset 0 0 30px rgba(0, 255, 0, 0.1);
-            animation: modal-glow 2s ease-in-out infinite;
-        }
-        
-        @keyframes modal-glow {
-            0%, 100% { box-shadow: 0 0 50px rgba(0, 255, 0, 0.4), inset 0 0 30px rgba(0, 255, 0, 0.1); }
-            50% { box-shadow: 0 0 70px rgba(0, 255, 0, 0.6), inset 0 0 40px rgba(0, 255, 0, 0.15); }
-        }
-        
-        .modal-content::before {
-            content: '╔═ TERMINAL OUTPUT ═╗';
-            position: absolute;
-            top: -12px;
-            left: 20px;
-            background: #000;
-            padding: 0 15px;
-            color: #00ff00;
-            font-size: 14px;
-            letter-spacing: 2px;
-            font-family: 'VT323', monospace;
-            text-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-        }
-        
-        .modal-log-content {
-            background: #000;
-            color: #0f0;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            overflow-wrap: break-word;
-            max-height: 60vh;
-            overflow-y: auto;
-            padding: 15px;
-            border: 1px solid #333;
-        }
-        
-        .modal-close {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 30px;
-            color: #fff;
-            cursor: pointer;
-        }
-        
-        .modal-close:hover {
-            color: #ffffff;
-        }
-
-        /* ASCII Loading Spinner */
-        .loading {
-            display: inline-block;
-            font-family: 'VT323', monospace;
-            font-size: 16px;
-            color: #00ff00;
-            animation: ascii-spin 0.8s steps(4) infinite;
-        }
-        
-        .loading::after {
-            content: '◐';
-            animation: ascii-rotate 0.8s steps(4) infinite;
-        }
-        
-        @keyframes ascii-rotate {
-            0% { content: '◐'; }
-            25% { content: '◓'; }
-            50% { content: '◑'; }
-            75% { content: '◒'; }
-            100% { content: '◐'; }
-        }
-        
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        /* Enhanced ASCII Art Elements */
-        .ascii-border {
-            font-family: 'VT323', monospace;
-            color: #00ff00;
-            text-shadow: 0 0 5px rgba(0, 255, 0, 0.6);
-        }
-        
-        /* Data Stream Effect */
-        @keyframes data-stream {
-            0% {
-                background-position: 0 0;
-            }
-            100% {
-                background-position: 0 100%;
-            }
-        }
-        
-        .data-streaming {
-            background-image: repeating-linear-gradient(
-                0deg,
-                transparent,
-                transparent 2px,
-                rgba(0, 255, 0, 0.03) 2px,
-                rgba(0, 255, 0, 0.03) 4px
-            );
-            background-size: 100% 20px;
-            animation: data-stream 2s linear infinite;
-        }
-        
-        /* Terminal Prompt Style */
-        .terminal-prompt::before {
-            content: 'root@barbossa:~# ';
-            color: #00ff00;
-            font-family: 'Share Tech Mono', monospace;
-            font-size: 11px;
-        }
-        
-        /* Matrix Rain Background (subtle) */
-        @keyframes matrix-fall {
-            0% {
-                transform: translateY(-100%);
-                opacity: 0;
-            }
-            10% {
-                opacity: 1;
-            }
-            90% {
-                opacity: 1;
-            }
-            100% {
-                transform: translateY(100vh);
-                opacity: 0;
-            }
-        }
-        
-        /* Additional terminal styling improvements */
-        
-        .service-status {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 0;
-            margin-right: 10px;
-            position: relative;
-            animation: status-pulse 2s infinite;
-        }
-        
-        @keyframes status-pulse {
-            0%, 100% { 
-                opacity: 1; 
-                transform: scale(1);
-            }
-            50% { 
-                opacity: 0.7; 
-                transform: scale(1.2);
-            }
-        }
-        
-        @keyframes blink {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .service-status.active {
-            background: radial-gradient(circle, #00ff00 0%, #00aa00 100%);
-            box-shadow: 
-                0 0 15px #00ff00, 
-                0 0 30px rgba(0, 255, 0, 0.5),
-                inset 0 0 5px #00ff00;
-        }
-        
-        .service-status.inactive {
-            background: radial-gradient(circle, #ff0000 0%, #aa0000 100%);
-            box-shadow: 
-                0 0 15px #ff0000, 
-                0 0 30px rgba(255, 0, 0, 0.5),
-                inset 0 0 5px #ff0000;
-        }
-        
-        .service-status.error {
-            background: #ffff00;
-            box-shadow: 0 0 5px #ffff00;
-        }
-        
-        .log-container {
-            max-height: 400px;
-            overflow-y: auto;
-            border: 1px solid #333;
-            background: #000;
-        }
-        
-        .error-message {
-            color: #ff0000;
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid #ff0000;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 3px;
-        }
-        
-        .success-message {
-            color: #00ff00;
-            background: rgba(0, 255, 0, 0.1);
-            border: 1px solid #00ff00;
-            padding: 10px;
-            margin: 10px 0;
-            border-radius: 3px;
-        }
-        
-        /* Scrollbar styling for terminal theme */
-        ::-webkit-scrollbar {
-            width: 8px;
-            height: 8px;
-        }
-        
-        ::-webkit-scrollbar-track {
-            background: #000;
-            border: 1px solid #00ff00;
-            box-shadow: inset 0 0 5px rgba(0, 255, 0, 0.1);
-        }
-        
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(180deg, #00ff00 0%, #00aa00 100%);
-            border-radius: 0;
-            box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
-        }
-        
-        ::-webkit-scrollbar-thumb:hover {
-            background: #00ff00;
-            box-shadow: 0 0 10px rgba(0, 255, 0, 0.8);
-        }
-        
-        ::-webkit-scrollbar-corner {
-            background: #000;
-        }
-        
-        /* Terminal cursor effect */
-        @keyframes cursor-blink {
-            0%, 49% { opacity: 1; }
-            50%, 100% { opacity: 0; }
-        }
-        
-        .cursor::after {
-            content: '_';
-            animation: cursor-blink 1s infinite;
-            color: #00ff00;
-        }
-        
-        /* Matrix rain effect for background */
-        @keyframes matrix-rain {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
-        }
-        
-        /* Terminal glow effect */
-        .terminal-glow {
-            text-shadow: 0 0 10px #00ff00, 0 0 20px #00ff00, 0 0 30px #00ff00;
-        }
-        
-        /* Service tab content styling */
-        .service-tab-content {
-            display: none;
-            padding-top: 10px; /* Add padding to prevent content overlap */
-        }
-        
-        .service-tab-content.active {
-            display: block;
-            animation: fadeIn 0.3s;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; }
-            to { opacity: 1; }
+            background: rgba(0,0,0,0.9);
+            z-index: 50;
         }
     </style>
 </head>
-<body>
-    <div class="header">
-        <h1>╔═ BARBOSSA_CONTROL_CENTER_V2.0 ═╗</h1>
-        <div class="status-info">
-            <span id="system-time" style="color: #00ff00; font-family: 'VT323', monospace; font-size: 14px; text-shadow: 0 0 3px rgba(0,255,0,0.6);">{{ timestamp }}</span>
-            <span class="status-badge status-online" id="portal-status" style="font-size: 12px; text-transform: uppercase;">▓ SYSTEM_ONLINE ▓</span>
-            <span style="color: #00aa00; font-size: 13px; font-family: 'VT323', monospace;">USER://{{ username }}</span>
-        </div>
-    </div>
-
-    <!-- Navigation Bar -->
-    <div class="navbar">
-        <a href="/" class="active">▸ Dashboard</a>
-        <a href="/workflows">▸ Workflows</a>
-        <a href="/logs">▸ System Logs</a>
-    </div>
-
-    <div class="container">
-        <!-- Barbossa Status Card -->
-        <div class="card">
-            <h2>BARBOSSA_STATUS</h2>
-            <div class="stats-grid">
-                <div class="stat-box">
-                    <div class="value" id="barbossa-status">-</div>
-                    <div class="label">Status</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="next-run">-</div>
-                    <div class="label">Next Run</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="claude-count">0</div>
-                    <div class="label">Claude Active</div>
-                </div>
-            </div>
-            <div class="work-tally" id="work-tally">
-                <!-- Populated by JS -->
-            </div>
-            <div style="margin-top: 10px; padding-top: 10px; border-top: 1px solid #333;">
-                <div style="color: #999; font-size: 10px; margin-bottom: 5px;">QUICK_ACTIONS:</div>
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 3px;">
-                    <button class="button" onclick="triggerBarbossa('infrastructure')" style="padding: 4px 8px; font-size: 10px;">RUN_INFRA</button>
-                    <button class="button" onclick="triggerBarbossa('personal_projects')" style="padding: 4px 8px; font-size: 10px;">RUN_PROJECTS</button>
-                    <button class="button" onclick="triggerBarbossa('davy_jones')" style="padding: 4px 8px; font-size: 10px;">RUN_DAVY</button>
-                    <button class="button" onclick="triggerBarbossa()" style="padding: 4px 8px; font-size: 10px;">AUTO_RUN</button>
-                    <button class="button secondary" onclick="refreshStatus()" style="padding: 4px 8px; font-size: 10px;">REFRESH</button>
-                    <button class="button secondary" onclick="viewFullLogs()" style="padding: 4px 8px; font-size: 10px;">VIEW_LOGS</button>
-                </div>
+<body class="bg-black text-terminal min-h-screen relative">
+    <!-- Header -->
+    <header class="sticky top-0 z-40 bg-black border-b border-terminal/30 px-4 py-2">
+        <div class="flex justify-between items-center">
+            <h1 class="text-lg font-bold uppercase tracking-wider glow-text">
+                ▓ BARBOSSA CONTROL CENTER ▓
+            </h1>
+            <div class="flex gap-4 text-xs">
+                <span class="px-2 py-1 border border-terminal" id="status-badge">ONLINE</span>
+                <span class="text-terminal-dim" id="timestamp"></span>
             </div>
         </div>
+    </header>
 
-        <!-- System Health Card -->
-        <div class="card">
-            <h2>SYSTEM_HEALTH</h2>
-            <div id="system-stats" style="font-size: 11px; font-family: 'Courier New', monospace;">
-                <div style="margin: 5px 0; color: #ffffff;">
-                    <span style="color: #666666;">CPU........:</span> <span id="cpu-usage" style="color: #ffffff;">SCANNING...</span>
-                </div>
-                <div style="margin: 5px 0; color: #ffffff;">
-                    <span style="color: #666666;">MEMORY.....:</span> <span id="memory-usage" style="color: #ffffff;">SCANNING...</span>
-                </div>
-                <div style="margin: 5px 0; color: #ffffff;">
-                    <span style="color: #666666;">DISK.......:</span> <span id="disk-usage" style="color: #ffffff;">SCANNING...</span>
-                </div>
-                <div style="margin: 5px 0; color: #ffffff;">
-                    <span style="color: #666666;">UPTIME.....:</span> <span id="uptime" style="color: #ffffff;">SCANNING...</span>
-                </div>
-            </div>
-            <h3 style="margin-top: 10px; color: #ffffff; font-size: 11px; border-top: 1px solid #333333; padding-top: 5px;">ACTIVE_SERVICES</h3>
-            <div id="services-list" style="margin-top: 5px;">
-                <!-- Populated by JS -->
-            </div>
+    <!-- Navigation -->
+    <nav class="sticky top-12 z-30 bg-black border-b border-terminal/20 px-4 py-1">
+        <div class="flex gap-2 text-xs">
+            <a href="/" class="px-3 py-1 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase">Dashboard</a>
+            <a href="/workflows" class="px-3 py-1 border border-terminal/50 hover:bg-terminal/10 transition-colors uppercase">Workflows</a>
+            <a href="/logs" class="px-3 py-1 border border-terminal/50 hover:bg-terminal/10 transition-colors uppercase">Logs</a>
         </div>
+    </nav>
 
-
-        <!-- Work History Card - Double Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>WORK_HISTORY</h2>
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('changelogs')">Changelogs</button>
-                <button class="tab" onclick="switchTab('claude-outputs')">Claude Outputs</button>
-                <button class="tab" onclick="switchTab('security')">Security</button>
-            </div>
+    <!-- Main Container -->
+    <div class="relative z-10 p-4">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 max-w-full">
             
-            <div id="changelogs" class="tab-content active">
-                <div id="changelog-list" class="log-viewer" style="height: 300px;">
+            <!-- Barbossa Status -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Barbossa Status
+                </h2>
+                <div class="grid grid-cols-2 gap-2 text-xs">
+                    <div class="bg-terminal/5 border border-terminal/30 p-2 text-center">
+                        <div class="text-base font-bold" id="barbossa-status">-</div>
+                        <div class="text-terminal-dim text-[10px] uppercase mt-1">Status</div>
+                    </div>
+                    <div class="bg-terminal/5 border border-terminal/30 p-2 text-center">
+                        <div class="text-base font-bold" id="next-run">-</div>
+                        <div class="text-terminal-dim text-[10px] uppercase mt-1">Next Run</div>
+                    </div>
+                    <div class="bg-terminal/5 border border-terminal/30 p-2 text-center col-span-2">
+                        <div class="text-base font-bold" id="claude-count">0</div>
+                        <div class="text-terminal-dim text-[10px] uppercase mt-1">Claude Active</div>
+                    </div>
+                </div>
+                
+                <!-- Work Tally -->
+                <div class="mt-3 pt-2 border-t border-terminal/20">
+                    <div class="text-[10px] text-terminal-dim uppercase mb-2">Work Distribution</div>
+                    <div id="work-tally" class="space-y-1">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+                
+                <!-- Quick Actions -->
+                <div class="mt-3 pt-2 border-t border-terminal/20">
+                    <div class="grid grid-cols-2 gap-1">
+                        <button onclick="triggerBarbossa('infrastructure')" 
+                            class="text-[10px] px-2 py-1 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase">
+                            Infra
+                        </button>
+                        <button onclick="triggerBarbossa('personal_projects')" 
+                            class="text-[10px] px-2 py-1 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase">
+                            Projects
+                        </button>
+                        <button onclick="triggerBarbossa('davy_jones')" 
+                            class="text-[10px] px-2 py-1 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase">
+                            Davy
+                        </button>
+                        <button onclick="triggerBarbossa()" 
+                            class="text-[10px] px-2 py-1 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase">
+                            Auto
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- System Health -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    System Health
+                </h2>
+                <div class="space-y-2 text-xs font-mono">
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">CPU:</span>
+                        <span id="cpu-usage">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Memory:</span>
+                        <span id="memory-usage">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Disk:</span>
+                        <span id="disk-usage">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Network:</span>
+                        <span id="network-status">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Uptime:</span>
+                        <span id="uptime">--</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Services Status -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Services
+                </h2>
+                <div id="services-list" class="space-y-1 text-xs">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Claude Processes -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Claude Processes
+                </h2>
+                <div id="claude-processes" class="space-y-1 text-xs max-h-40 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Custom Prompt Interface (Full Width) -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border md:col-span-2 lg:col-span-3 xl:col-span-4">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Custom Prompt Interface
+                </h2>
+                <div class="grid md:grid-cols-2 gap-3">
+                    <div>
+                        <textarea id="custom-prompt" 
+                            placeholder="Enter task description..." 
+                            class="w-full h-20 bg-black border border-terminal/50 text-terminal text-xs p-2 font-mono placeholder-terminal/30 focus:border-terminal focus:outline-none resize-none">
+                        </textarea>
+                        <div class="grid grid-cols-2 gap-2 mt-2">
+                            <select id="custom-repository" 
+                                class="bg-black border border-terminal/50 text-terminal text-xs p-1 focus:border-terminal focus:outline-none">
+                                <option value="">No specific repository</option>
+                                <!-- Populated by JS -->
+                            </select>
+                            <select id="task-type" 
+                                class="bg-black border border-terminal/50 text-terminal text-xs p-1 focus:border-terminal focus:outline-none">
+                                <option value="custom">Custom Task</option>
+                                <option value="feature">Feature Development</option>
+                                <option value="bugfix">Bug Fix</option>
+                                <option value="refactor">Refactoring</option>
+                                <option value="testing">Testing</option>
+                                <option value="documentation">Documentation</option>
+                            </select>
+                        </div>
+                        <button onclick="submitCustomPrompt()" 
+                            class="mt-2 w-full text-xs px-3 py-2 border border-terminal bg-terminal/10 hover:bg-terminal/20 transition-colors uppercase font-bold">
+                            Execute Task
+                        </button>
+                    </div>
+                    <div>
+                        <div class="text-[10px] text-terminal-dim uppercase mb-2">Active Sessions</div>
+                        <div id="sessions-list" class="space-y-1 max-h-32 overflow-y-auto">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Logs -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border md:col-span-2">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Recent Activity
+                </h2>
+                <div id="recent-logs" class="space-y-1 text-xs font-mono max-h-48 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+
+            <!-- Security Status -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Security
+                </h2>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Violations:</span>
+                        <span id="security-violations">0</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Last Audit:</span>
+                        <span id="last-audit" class="text-[10px]">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Status:</span>
+                        <span class="text-terminal">SECURE</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Docker Containers -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Docker
+                </h2>
+                <div id="docker-containers" class="space-y-1 text-xs max-h-40 overflow-y-auto">
                     <!-- Populated by JS -->
                 </div>
             </div>
             
-            <div id="claude-outputs" class="tab-content">
-                <div id="claude-output-list" class="log-viewer" style="height: 300px;">
+            <!-- Backup Status -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Backups
+                </h2>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Last Backup:</span>
+                        <span id="last-backup" class="text-[10px]">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Total Size:</span>
+                        <span id="backup-size">--</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-terminal-dim">Count:</span>
+                        <span id="backup-count">--</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Projects -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Projects
+                </h2>
+                <div id="projects-list" class="space-y-1 text-xs max-h-40 overflow-y-auto">
                     <!-- Populated by JS -->
                 </div>
             </div>
             
-            <div id="security" class="tab-content">
-                <div id="security-list" class="log-viewer" style="height: 300px;">
+            <!-- Workflows -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Workflows
+                </h2>
+                <div id="workflows-list" class="space-y-1 text-xs max-h-40 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Performance Analytics -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border md:col-span-2">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Performance
+                </h2>
+                <div class="grid grid-cols-3 gap-2 text-xs">
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="avg-response-time">--</div>
+                        <div class="text-[10px] text-terminal-dim">Avg Response</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="request-rate">--</div>
+                        <div class="text-[10px] text-terminal-dim">Req/s</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-lg font-bold" id="error-rate">--</div>
+                        <div class="text-[10px] text-terminal-dim">Error Rate</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- System Anomalies -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Anomalies
+                </h2>
+                <div id="anomalies-list" class="space-y-1 text-xs max-h-32 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Integrations Status -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Integrations
+                </h2>
+                <div id="integrations-list" class="space-y-1 text-xs">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- GitHub Repos -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    GitHub
+                </h2>
+                <div id="github-repos" class="space-y-1 text-xs max-h-32 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Optimization Suggestions -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border md:col-span-2 lg:col-span-3">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Optimizations
+                </h2>
+                <div id="optimization-suggestions" class="space-y-1 text-xs max-h-32 overflow-y-auto">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            
+            <!-- Webhooks -->
+            <div class="border border-terminal bg-black/90 p-3 terminal-border">
+                <h2 class="text-xs font-bold uppercase tracking-wider mb-3 pb-1 border-b border-terminal/50 glow-text">
+                    Webhooks
+                </h2>
+                <div id="webhooks-list" class="space-y-1 text-xs max-h-32 overflow-y-auto">
                     <!-- Populated by JS -->
                 </div>
             </div>
         </div>
-
-        <!-- Log Management Card - Double Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>LOG_MANAGEMENT</h2>
-            <input type="text" class="search-box" id="log-search" placeholder="SEARCH://" onkeyup="searchLogs()">
-            <div id="recent-logs" class="log-viewer" style="height: 250px;">
-                <!-- Populated by JS -->
-            </div>
-            <div style="margin-top: 12px; text-align: right; padding-top: 10px; border-top: 1px solid rgba(0,255,0,0.3);">
-                <button class="button secondary" onclick="showArchiveDialog()">ARCHIVE</button>
-                <button class="button danger" onclick="clearLogs(30)">PURGE_30D</button>
-            </div>
-        </div>
-
-        <!-- Enhanced Service Monitoring Card - Double Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>SERVICE_MONITOR</h2>
-            <div class="tabs" id="service-monitor-tabs">
-                <button class="tab active" onclick="switchServiceTab('docker')">DOCKER</button>
-                <button class="tab" onclick="switchServiceTab('tmux')">TMUX</button>
-                <button class="tab" onclick="switchServiceTab('systemd')">SYSTEMD</button>
-                <button class="tab" onclick="switchServiceTab('davy')">DAVY_JONES</button>
-            </div>
-            
-            <div id="docker-services" class="service-tab-content active">
-                <div id="docker-container-list" class="log-viewer" style="height: 200px;">
-                    <!-- Docker containers populated by JS -->
-                </div>
-            </div>
-            
-            <div id="tmux-services" class="service-tab-content" style="display: none;">
-                <div id="tmux-session-list" class="log-viewer" style="height: 200px;">
-                    <!-- Tmux sessions populated by JS -->
-                </div>
-            </div>
-            
-            <div id="systemd-services" class="service-tab-content" style="display: none;">
-                <div id="systemd-service-list" class="log-viewer" style="height: 200px;">
-                    <!-- Systemd services populated by JS -->
-                </div>
-            </div>
-            
-            <div id="davy-services" class="service-tab-content" style="display: none;">
-                <div id="davy-status-info" class="log-viewer" style="height: 200px;">
-                    <!-- Davy Jones status populated by JS -->
-                </div>
-            </div>
-        </div>
-        <!-- Enhanced System Metrics Card - Full Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>SYSTEM_METRICS</h2>
-            <div class="stats-grid" style="grid-template-columns: repeat(6, 1fr);">
-                <div class="stat-box">
-                    <div class="value" id="enhanced-cpu">-</div>
-                    <div class="label">CPU</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="enhanced-memory">-</div>
-                    <div class="label">MEMORY</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="enhanced-disk">-</div>
-                    <div class="label">DISK</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="network-io">-</div>
-                    <div class="label">NETWORK</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="load-avg">-</div>
-                    <div class="label">LOAD</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="processes">-</div>
-                    <div class="label">PROCS</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Network Monitoring Card -->
-        <div class="card">
-            <h2>NETWORK_STATUS</h2>
-            <h3 style="color: #00ff00; font-size: 11px; margin: 10px 0 5px 0;">OPEN_PORTS</h3>
-            <div id="open-ports" class="log-viewer" style="height: 150px; font-size: 10px;">
-                <!-- Ports populated by JS -->
-            </div>
-            <h3 style="color: #00ff00; font-size: 11px; margin: 10px 0 5px 0;">CONNECTIONS</h3>
-            <div id="active-connections" class="log-viewer" style="height: 100px; font-size: 10px;">
-                <!-- Connections populated by JS -->
-            </div>
-        </div>
-
-        <!-- Git Projects Status Card -->
-        <div class="card">
-            <h2>GIT_PROJECTS</h2>
-            <div id="projects-overview" class="log-viewer" style="height: 280px;">
-                <!-- Projects populated by JS -->
-            </div>
-        </div>
-
-        <!-- System Alerts Card - Full Width (only shows when alerts exist) -->
-        <div class="card" id="alerts-section" style="grid-column: span 2; display: none;">
-            <h2 style="color: #ff0000;">SYSTEM_ALERTS</h2>
-            <div id="alerts-container" class="log-viewer" style="height: 150px;">
-                <!-- Alerts populated by JS -->
-            </div>
-        </div>
-
-        <!-- NEW: Backup & Restore Card -->
-        <div class="card">
-            <h2>BACKUP_RESTORE</h2>
-            <div style="margin-bottom: 10px;">
-                <button class="button" onclick="createBackup('full')" style="width: 100%; margin-bottom: 5px;">▸ CREATE_FULL_BACKUP</button>
-                <button class="button secondary" onclick="createBackup('config')" style="width: 48%; margin-right: 2%;">CONFIG_ONLY</button>
-                <button class="button secondary" onclick="createBackup('data')" style="width: 48%;">DATA_ONLY</button>
-            </div>
-            <div class="log-viewer" id="backup-list" style="height: 150px; font-size: 10px;">
-                <!-- Backups populated by JS -->
-            </div>
-            <div style="margin-top: 10px;">
-                <button class="button secondary" onclick="refreshBackups()" style="width: 100%;">↻ REFRESH_BACKUPS</button>
-            </div>
-        </div>
-
-        <!-- NEW: Advanced Search Card -->
-        <div class="card">
-            <h2>ADVANCED_SEARCH</h2>
-            <input type="text" class="search-box" id="advanced-search-input" placeholder="SEARCH_ALL_SYSTEMS://" onkeypress="if(event.key==='Enter')performAdvancedSearch()">
-            <div class="tabs" style="margin-top: 10px;">
-                <button class="tab active" onclick="setSearchCategory('all')">ALL</button>
-                <button class="tab" onclick="setSearchCategory('projects')">PROJECTS</button>
-                <button class="tab" onclick="setSearchCategory('tasks')">TASKS</button>
-                <button class="tab" onclick="setSearchCategory('logs')">LOGS</button>
-                <button class="tab" onclick="setSearchCategory('config')">CONFIG</button>
-            </div>
-            <div class="log-viewer" id="search-results" style="height: 180px; margin-top: 10px;">
-                <div style="color: #666; text-align: center; padding: 20px;">Enter search query above...</div>
-            </div>
-        </div>
-
-        <!-- NEW: Performance Monitoring Card - Full Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>PERFORMANCE_MONITORING</h2>
-            <div class="stats-grid" style="grid-template-columns: repeat(4, 1fr); margin-bottom: 10px;">
-                <div class="stat-box">
-                    <div class="value" id="perf-cpu-usage">-</div>
-                    <div class="label">CPU_USAGE</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="perf-memory-usage">-</div>
-                    <div class="label">MEM_USAGE</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="perf-disk-io">-</div>
-                    <div class="label">DISK_IO</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="perf-network-io">-</div>
-                    <div class="label">NET_IO</div>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <button class="button" onclick="runBenchmark('quick')">▸ QUICK_BENCHMARK</button>
-                <button class="button" onclick="runBenchmark('full')">▸ FULL_BENCHMARK</button>
-                <button class="button secondary" onclick="getPerformanceRecommendations()">▸ GET_RECOMMENDATIONS</button>
-            </div>
-            <div class="log-viewer" id="performance-results" style="height: 200px;">
-                <!-- Performance data populated by JS -->
-            </div>
-        </div>
-
-        <!-- NEW: Database Management Card -->
-        <div class="card">
-            <h2>DATABASE_MANAGEMENT</h2>
-            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 10px;">
-                <div class="stat-box">
-                    <div class="value" id="db-size">-</div>
-                    <div class="label">TOTAL_SIZE</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="db-records">-</div>
-                    <div class="label">RECORDS</div>
-                </div>
-            </div>
-            <div id="database-list" class="log-viewer" style="height: 120px; margin-bottom: 10px;">
-                <!-- Database info populated by JS -->
-            </div>
-            <div style="display: flex; gap: 5px;">
-                <button class="button" onclick="optimizeDatabase('all')">▸ OPTIMIZE_ALL</button>
-                <button class="button secondary" onclick="getDatabaseStats()">▸ REFRESH_STATS</button>
-            </div>
-        </div>
-
-        <!-- NEW: System Analytics Card -->
-        <div class="card">
-            <h2>SYSTEM_ANALYTICS</h2>
-            <div style="margin-bottom: 10px;">
-                <select id="analytics-period" class="search-box" onchange="updateAnalytics()" style="width: 100%; background: rgba(0, 20, 0, 0.5); border: 1px solid #00ff00; color: #00ff00;">
-                    <option value="7d">LAST_7_DAYS</option>
-                    <option value="30d" selected>LAST_30_DAYS</option>
-                    <option value="90d">LAST_90_DAYS</option>
-                    <option value="1y">LAST_YEAR</option>
-                </select>
-            </div>
-            <div id="analytics-summary" class="log-viewer" style="height: 200px;">
-                <!-- Analytics populated by JS -->
-            </div>
-        </div>
-
-        <!-- NEW: Alert Management Card - Full Width -->
-        <div class="card" style="grid-column: span 2;">
-            <h2>ALERT_MANAGEMENT</h2>
-            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
-                <input type="text" id="alert-name" placeholder="Alert name" class="search-box" style="flex: 1;">
-                <select id="alert-metric" class="search-box" style="flex: 1; background: rgba(0, 20, 0, 0.5); border: 1px solid #00ff00; color: #00ff00;">
-                    <option value="cpu">CPU</option>
-                    <option value="memory">MEMORY</option>
-                    <option value="disk">DISK</option>
-                    <option value="network">NETWORK</option>
-                </select>
-                <input type="number" id="alert-threshold" placeholder="Threshold %" class="search-box" style="width: 100px;">
-                <button class="button" onclick="createAlert()">+ ADD_ALERT</button>
-            </div>
-            <div id="alert-list" class="log-viewer" style="height: 150px;">
-                <!-- Alerts populated by JS -->
-            </div>
-        </div>
-
-        <!-- NEW: Integration Webhooks Card -->
-        <div class="card">
-            <h2>INTEGRATIONS</h2>
-            <div id="webhook-list" class="log-viewer" style="height: 150px; margin-bottom: 10px;">
-                <!-- Webhooks populated by JS -->
-            </div>
-            <button class="button" onclick="showWebhookDialog()" style="width: 100%;">+ ADD_WEBHOOK</button>
-        </div>
-
-        <!-- NEW: Real-time Monitoring Card -->
-        <div class="card">
-            <h2>REALTIME_MONITOR</h2>
-            <div class="stats-grid" style="grid-template-columns: repeat(2, 1fr); margin-bottom: 10px;">
-                <div class="stat-box">
-                    <div class="value" id="realtime-cpu">-</div>
-                    <div class="label">CPU_NOW</div>
-                </div>
-                <div class="stat-box">
-                    <div class="value" id="realtime-mem">-</div>
-                    <div class="label">MEM_NOW</div>
-                </div>
-            </div>
-            <div id="top-processes" class="log-viewer" style="height: 150px;">
-                <!-- Top processes populated by JS -->
-            </div>
-            <div style="margin-top: 10px;">
-                <label style="color: #666; font-size: 10px;">
-                    <input type="checkbox" id="auto-refresh-realtime" checked> AUTO_REFRESH (5s)
-                </label>
-            </div>
-        </div>
-
     </div>
 
-    
-    <!-- Log Viewer Modal -->
+    <!-- Modal for log viewing -->
     <div id="logModal" class="modal">
-        <div class="modal-content">
-            <span class="modal-close" onclick="closeModal()">&times;</span>
-            <h2 id="modal-title">Log Viewer</h2>
-            <div id="modal-content" class="modal-log-content">
-                Loading...
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-black border-2 border-terminal w-full max-w-4xl max-h-[80vh] overflow-hidden">
+                <div class="flex justify-between items-center p-3 border-b border-terminal">
+                    <h3 class="text-sm font-bold uppercase">Log Viewer</h3>
+                    <button onclick="closeModal()" class="text-terminal hover:text-white text-xl">&times;</button>
+                </div>
+                <div id="modal-log-content" class="p-4 overflow-y-auto max-h-[70vh] font-mono text-xs">
+                    <!-- Log content here -->
+                </div>
             </div>
         </div>
     </div>
+
     <script>
         let currentData = {};
-        let searchCategory = 'all';
-        let realtimeInterval = null;
+        let currentSessionId = null;
+        let sessionOutputOffset = 0;
+        
+        // Load allowed repositories on page load
+        async function loadAllowedRepositories() {
+            try {
+                const response = await fetch('/api/barbossa/allowed-repositories');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const repoSelect = document.getElementById('custom-repository');
+                    while (repoSelect.options.length > 1) {
+                        repoSelect.remove(1);
+                    }
+                    
+                    result.repositories.forEach(repo => {
+                        const option = document.createElement('option');
+                        option.value = repo.url;
+                        option.textContent = repo.name;
+                        option.title = repo.full_name;
+                        repoSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading repositories:', error);
+            }
+        }
+        
+        // Custom Prompt Functions
+        async function submitCustomPrompt() {
+            const promptText = document.getElementById('custom-prompt').value.trim();
+            const repository = document.getElementById('custom-repository').value;
+            const taskType = document.getElementById('task-type').value;
+            
+            if (!promptText) {
+                alert('Please enter a task description');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/barbossa/custom-prompt', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        prompt: promptText,
+                        repository: repository || null,
+                        task_type: taskType
+                    })
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    alert(`✅ Session ${result.session_id} started`);
+                    document.getElementById('custom-prompt').value = '';
+                    document.getElementById('custom-repository').value = '';
+                    currentSessionId = result.session_id;
+                    await refreshSessions();
+                    startSessionMonitoring(result.session_id);
+                } else {
+                    alert(`❌ Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        async function refreshSessions() {
+            try {
+                const response = await fetch('/api/barbossa/sessions?limit=5');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const sessionsList = document.getElementById('sessions-list');
+                    sessionsList.innerHTML = '';
+                    
+                    if (result.sessions.length === 0) {
+                        sessionsList.innerHTML = '<div class="text-terminal-dim text-[10px]">No active sessions</div>';
+                    } else {
+                        result.sessions.forEach(session => {
+                            const statusColor = session.status === 'running' ? 'text-yellow-500' : 
+                                              session.status === 'completed' ? 'text-terminal' : 'text-red-500';
+                            
+                            const sessionDiv = document.createElement('div');
+                            sessionDiv.className = 'flex justify-between items-center p-1 bg-terminal/5 border border-terminal/20';
+                            sessionDiv.innerHTML = `
+                                <div class="flex items-center gap-2">
+                                    <span class="text-[10px] text-terminal-dim">ID:</span>
+                                    <span class="text-[10px]">${session.id}</span>
+                                    <span class="${statusColor} text-[10px] uppercase">[${session.status}]</span>
+                                </div>
+                                <div class="flex gap-1">
+                                    ${session.status === 'running' ? 
+                                        `<button onclick="viewSessionOutput('${session.id}')" class="text-[10px] px-1 border border-terminal/50 hover:bg-terminal/10">VIEW</button>
+                                         <button onclick="terminateSession('${session.id}')" class="text-[10px] px-1 border border-red-500/50 hover:bg-red-500/10 text-red-500">KILL</button>` : 
+                                        `<button onclick="viewSessionOutput('${session.id}')" class="text-[10px] px-1 border border-terminal/50 hover:bg-terminal/10">VIEW</button>`}
+                                </div>
+                            `;
+                            sessionsList.appendChild(sessionDiv);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching sessions:', error);
+            }
+        }
+        
+        async function viewSessionOutput(sessionId) {
+            try {
+                const response = await fetch(`/api/barbossa/session/${sessionId}`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    const modal = document.getElementById('logModal');
+                    const content = document.getElementById('modal-log-content');
+                    content.innerHTML = `<pre class="text-terminal">${result.output || 'No output yet...'}</pre>`;
+                    modal.style.display = 'block';
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        async function terminateSession(sessionId) {
+            if (!confirm(`Terminate session ${sessionId}?`)) return;
+            
+            try {
+                const response = await fetch(`/api/barbossa/session/${sessionId}/terminate`, {
+                    method: 'POST'
+                });
+                const result = await response.json();
+                
+                if (result.success) {
+                    await refreshSessions();
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
+            } catch (error) {
+                alert(`Error: ${error.message}`);
+            }
+        }
+        
+        function startSessionMonitoring(sessionId) {
+            sessionOutputOffset = 0;
+            const monitorInterval = setInterval(async () => {
+                try {
+                    const response = await fetch(`/api/barbossa/session/${sessionId}/stream?offset=${sessionOutputOffset}`);
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        sessionOutputOffset = result.offset;
+                        
+                        if (result.completed) {
+                            clearInterval(monitorInterval);
+                            await refreshSessions();
+                        }
+                    }
+                } catch (error) {
+                    console.error('Error monitoring session:', error);
+                    clearInterval(monitorInterval);
+                }
+            }, 5000);
+        }
         
         async function fetchData() {
             try {
-                // Fetch data with better error handling - INCLUDING NEW V2 ENDPOINTS
                 const responses = await Promise.allSettled([
-                    fetch('/api/status').then(r => r.ok ? r.json() : Promise.reject(`Status API failed: ${r.status}`)),
-                    fetch('/api/changelogs').then(r => r.ok ? r.json() : Promise.reject(`Changelogs API failed: ${r.status}`)),
-                    fetch('/api/security').then(r => r.ok ? r.json() : Promise.reject(`Security API failed: ${r.status}`)),
-                    fetch('/api/claude').then(r => r.ok ? r.json() : Promise.reject(`Claude API failed: ${r.status}`)),
-                    fetch('/api/services').then(r => r.ok ? r.json() : Promise.reject(`Services API failed: ${r.status}`)),
-                    fetch('/api/comprehensive-status').then(r => r.ok ? r.json() : null),
-                    fetch('/api/network-status').then(r => r.ok ? r.json() : null),
-                    fetch('/api/projects').then(r => r.ok ? r.json() : null),
-                    // NEW V2 API ENDPOINTS
-                    fetch('/api/v2/backup/list').then(r => r.ok ? r.json() : null),
-                    fetch('/api/v2/database/stats').then(r => r.ok ? r.json() : null),
-                    fetch('/api/v2/monitoring/alerts').then(r => r.ok ? r.json() : null),
-                    fetch('/api/v2/integration/webhooks').then(r => r.ok ? r.json() : null),
-                    fetch('/api/v2/analytics/summary?period=30d').then(r => r.ok ? r.json() : null)
+                    fetch('/api/status').then(r => r.ok ? r.json() : Promise.reject('Status failed')),
+                    fetch('/api/changelogs').then(r => r.ok ? r.json() : Promise.reject('Changelogs failed')),
+                    fetch('/api/security').then(r => r.ok ? r.json() : Promise.reject('Security failed')),
+                    fetch('/api/claude').then(r => r.ok ? r.json() : Promise.reject('Claude failed')),
+                    fetch('/api/services').then(r => r.ok ? r.json() : Promise.reject('Services failed')),
+                    fetch('/api/network-status').then(r => r.ok ? r.json() : Promise.reject('Network failed')),
+                    fetch('/api/backup-status').then(r => r.ok ? r.json() : Promise.reject('Backup failed')),
+                    fetch('/api/comprehensive-status').then(r => r.ok ? r.json() : Promise.reject('Comprehensive failed')),
+                    fetch('/api/projects').then(r => r.ok ? r.json() : Promise.reject('Projects failed')),
+                    fetch('/api/barbossa-status').then(r => r.ok ? r.json() : Promise.reject('Barbossa status failed')),
+                    fetch('/api/logs/recent').then(r => r.ok ? r.json() : Promise.reject('Recent logs failed')),
+                    fetch('/api/settings').then(r => r.ok ? r.json() : Promise.reject('Settings failed')),
+                    fetch('/api/analytics/performance').then(r => r.ok ? r.json() : Promise.reject('Analytics failed')),
+                    fetch('/api/monitoring/anomalies').then(r => r.ok ? r.json() : Promise.reject('Anomalies failed')),
+                    fetch('/api/workflows').then(r => r.ok ? r.json() : Promise.reject('Workflows failed')),
+                    fetch('/api/integrations').then(r => r.ok ? r.json() : Promise.reject('Integrations failed')),
+                    fetch('/api/webhooks').then(r => r.ok ? r.json() : Promise.reject('Webhooks failed')),
+                    fetch('/api/integrations/github/repos').then(r => r.ok ? r.json() : Promise.reject('GitHub repos failed')),
+                    fetch('/api/integrations/docker/containers').then(r => r.ok ? r.json() : Promise.reject('Docker containers failed')),
+                    fetch('/api/optimization/suggestions').then(r => r.ok ? r.json() : Promise.reject('Optimization failed'))
                 ]);
                 
-                // Process responses with fallbacks
-                const [status, changelogs, security, claude, services, comprehensive, network, projects, 
-                       backups, database, alerts, webhooks, analytics] = responses.map((response, index) => {
-                    if (response.status === 'fulfilled') {
-                        return response.value;
-                    } else {
-                        const fallbacks = [{}, [], [], [], {}, null, null, null, null, null, null, null, null];
-                        console.warn(`API ${index} failed:`, response.reason);
-                        return fallbacks[index];
-                    }
-                });
+                const [statusRes, changelogsRes, securityRes, claudeRes, servicesRes, networkRes, backupRes,
+                       comprehensiveRes, projectsRes, barbossaStatusRes, recentLogsRes, settingsRes,
+                       analyticsRes, anomaliesRes, workflowsRes, integrationsRes, webhooksRes,
+                       githubReposRes, dockerContainersRes, optimizationRes] = responses;
                 
-                currentData = { status, changelogs, security, claude, services, comprehensive, network, projects,
-                              backups, database, alerts, webhooks, analytics };
-                updateUI();
-                updateComprehensiveData();
-                updateEnhancedFeatures();
+                currentData = {
+                    status: statusRes.status === 'fulfilled' ? statusRes.value : null,
+                    changelogs: changelogsRes.status === 'fulfilled' ? changelogsRes.value : null,
+                    security: securityRes.status === 'fulfilled' ? securityRes.value : null,
+                    claude: claudeRes.status === 'fulfilled' ? claudeRes.value : null,
+                    services: servicesRes.status === 'fulfilled' ? servicesRes.value : null,
+                    network: networkRes.status === 'fulfilled' ? networkRes.value : null,
+                    backup: backupRes.status === 'fulfilled' ? backupRes.value : null,
+                    comprehensive: comprehensiveRes.status === 'fulfilled' ? comprehensiveRes.value : null,
+                    projects: projectsRes.status === 'fulfilled' ? projectsRes.value : null,
+                    barbossaStatus: barbossaStatusRes.status === 'fulfilled' ? barbossaStatusRes.value : null,
+                    recentLogs: recentLogsRes.status === 'fulfilled' ? recentLogsRes.value : null,
+                    settings: settingsRes.status === 'fulfilled' ? settingsRes.value : null,
+                    analytics: analyticsRes.status === 'fulfilled' ? analyticsRes.value : null,
+                    anomalies: anomaliesRes.status === 'fulfilled' ? anomaliesRes.value : null,
+                    workflows: workflowsRes.status === 'fulfilled' ? workflowsRes.value : null,
+                    integrations: integrationsRes.status === 'fulfilled' ? integrationsRes.value : null,
+                    webhooks: webhooksRes.status === 'fulfilled' ? webhooksRes.value : null,
+                    githubRepos: githubReposRes.status === 'fulfilled' ? githubReposRes.value : null,
+                    dockerContainers: dockerContainersRes.status === 'fulfilled' ? dockerContainersRes.value : null,
+                    optimization: optimizationRes.status === 'fulfilled' ? optimizationRes.value : null
+                };
                 
+                console.log('Fetched all data:', currentData);
+                updateDashboard();
             } catch (error) {
-                console.error('Critical error fetching data:', error);
-                // Show error message to user
-                const errorDiv = document.createElement('div');
-                errorDiv.style.cssText = 'position: fixed; top: 100px; right: 20px; background: #ff0000; color: white; padding: 10px; border-radius: 5px; z-index: 9999;';
-                errorDiv.textContent = 'Dashboard data loading failed. Retrying...';
-                document.body.appendChild(errorDiv);
-                setTimeout(() => errorDiv.remove(), 3000);
-                
-                // Retry after delay
-                setTimeout(fetchData, 5000);
+                console.error('Error fetching data:', error);
             }
         }
-
-        function updateUI() {
-            // Update Barbossa status
-            const barbossa = currentData.status?.barbossa;
-            if (barbossa) {
-                document.getElementById('barbossa-status').textContent = barbossa.running ? 'ACTIVE' : 'IDLE';
-                document.getElementById('next-run').textContent = barbossa.next_run || '-';
-                document.getElementById('claude-count').textContent = barbossa.claude_processes?.length || 0;
+        
+        function updateDashboard() {
+            // Update Barbossa Status
+            if (currentData.status) {
+                // Check for barbossa data within status
+                const barbossaData = currentData.status.barbossa || currentData.status;
+                
+                document.getElementById('barbossa-status').textContent = barbossaData.running ? 'RUNNING' : 'IDLE';
+                document.getElementById('barbossa-status').className = barbossaData.running ? 
+                    'text-base font-bold text-yellow-500' : 'text-base font-bold';
+                
+                // Handle next_run which might be just a time string like "12:00 UTC"
+                let nextRunDisplay = 'N/A';
+                if (barbossaData.next_run) {
+                    // If it's a time string like "12:00 UTC", use it directly
+                    if (typeof barbossaData.next_run === 'string' && barbossaData.next_run.includes(':')) {
+                        nextRunDisplay = barbossaData.next_run;
+                    } else {
+                        // Otherwise try to parse as date
+                        const nextRunDate = new Date(barbossaData.next_run);
+                        nextRunDisplay = isNaN(nextRunDate.getTime()) ? barbossaData.next_run : nextRunDate.toLocaleTimeString();
+                    }
+                }
+                document.getElementById('next-run').textContent = nextRunDisplay;
                 
                 // Update work tally
                 const tallyDiv = document.getElementById('work-tally');
                 tallyDiv.innerHTML = '';
-                for (const [area, count] of Object.entries(barbossa.work_tally || {})) {
-                    tallyDiv.innerHTML += `
-                        <div class="work-area">
-                            <div class="count">${count}</div>
-                            <div class="name">${area.replace('_', ' ')}</div>
-                        </div>
-                    `;
+                if (barbossaData.work_tally) {
+                    Object.entries(barbossaData.work_tally).forEach(([area, count]) => {
+                        const bar = document.createElement('div');
+                        bar.className = 'flex justify-between items-center text-[10px]';
+                        bar.innerHTML = `
+                            <span class="text-terminal-dim">${area.replace(/_/g, ' ')}</span>
+                            <span class="font-bold">${count}</span>
+                        `;
+                        tallyDiv.appendChild(bar);
+                    });
                 }
                 
-                // Claude processes now shown in services
-            }
-            
-            // Update system stats
-            const system = currentData.status?.system;
-            if (system) {
-                document.getElementById('cpu-usage').textContent = system.cpu_usage || 'N/A';
-                document.getElementById('memory-usage').textContent = 
-                    `${system.memory?.used || '?'} / ${system.memory?.total || '?'}`;
-                document.getElementById('disk-usage').textContent = 
-                    `${system.disk?.used || '?'} / ${system.disk?.total || '?'} (${system.disk?.percent || '?'})`;
-                document.getElementById('uptime').textContent = system.uptime || 'N/A';
-            }
-            
-            // Update services - call new monitoring functions
-            updateCriticalServices();
-            updateDockerContainers();
-            updateTmuxSessions();
-            updateSystemdServices();
-            updateDavyJonesStatus();
-            
-            // Update changelogs with more compact display
-            const changelogList = document.getElementById('changelog-list');
-            changelogList.innerHTML = '';
-            for (const log of currentData.changelogs || []) {
-                const area = log.work_area.replace('_', ' ').toUpperCase();
-                const timestamp = log.timestamp.split(' ')[1]; // Just time, not date
-                changelogList.innerHTML += `
-                    <div class="log-entry" onclick="viewLog('${log.filename}')" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <span style="color: #00ff00;">[${area.substring(0, 8).padEnd(8, ' ')}]</span> 
-                        <span style="color: #999;">${timestamp}</span> 
-                        <span style="color: #fff;">${log.filename}</span> 
-                        <span style="color: #666;">(${log.size})</span>
-                    </div>
-                `;
-            }
-            
-            // Update Claude outputs with compact display
-            const claudeOutputList = document.getElementById('claude-output-list');
-            claudeOutputList.innerHTML = '';
-            for (const output of currentData.claude || []) {
-                const statusClass = output.status === 'completed' ? 'success' : 
-                                   output.status === 'in_progress' ? 'warning' : 'error';
-                const statusSymbol = output.status === 'completed' ? 'OK' : 
-                                   output.status === 'in_progress' ? '..' : '!!';
-                const timestamp = output.timestamp.split(' ')[1]; // Just time
-                claudeOutputList.innerHTML += `
-                    <div class="log-entry ${statusClass}" onclick="viewLog('${output.filename}')" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <span style="color: ${output.status === 'completed' ? '#0f0' : output.status === 'in_progress' ? '#ff0' : '#f00'};">[${statusSymbol}]</span>
-                        <span style="color: #999;">${timestamp}</span>
-                        <span style="color: #fff;">${output.filename}</span>
-                        <span style="color: #666;">${output.size}</span>
-                    </div>
-                `;
-            }
-            
-            // Update security events with compact display
-            const securityList = document.getElementById('security-list');
-            securityList.innerHTML = '';
-            for (const event of currentData.security || []) {
-                const levelClass = event.level === 'ERROR' ? 'error' : 
-                                  event.level === 'WARNING' ? 'warning' : 'info';
-                const levelSymbol = event.level === 'ERROR' ? '!!' : 
-                                   event.level === 'WARNING' ? '?' : 'i';
-                const timestamp = event.timestamp.split(' ')[1] || event.timestamp; // Just time
-                securityList.innerHTML += `
-                    <div class="log-entry ${levelClass}" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                        <span style="color: ${event.level === 'ERROR' ? '#f00' : event.level === 'WARNING' ? '#ff0' : '#999'};">[${levelSymbol}]</span>
-                        <span style="color: #666;">${timestamp}</span>
-                        <span style="color: #fff;">${event.message}</span>
-                    </div>
-                `;
-            }
-            
-            // Update recent logs
-            const recentLogs = document.getElementById('recent-logs');
-            recentLogs.innerHTML = '';
-            if (barbossa?.recent_logs && Array.isArray(barbossa.recent_logs)) {
-                for (const log of barbossa.recent_logs) {
-                    const sizeInKB = parseFloat(log.size);
-                    const sizeColor = sizeInKB > 1000 ? '#ff0000' : sizeInKB > 100 ? '#ffff00' : '#00ff00';
-                    const modTime = log.modified.split(' ')[1]; // Just time
-                    recentLogs.innerHTML += `
-                        <div class="log-entry" onclick="viewLog('${log.name}')" style="cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
-                            <span style="color: #666;">${modTime}</span>
-                            <span style="color: #fff;">${log.name}</span>
-                            <span style="color: #666;">(${log.size})</span>
-                        </div>
-                    `;
+                // Update System Health
+                const systemData = currentData.status.system || {};
+                
+                // Parse CPU usage from string like "%Cpu(s):  0.8 us,  0.4 sy..."
+                if (systemData.cpu_usage) {
+                    const cpuMatch = systemData.cpu_usage.match(/(\d+\.\d+)\s+us/);
+                    const cpuPercent = cpuMatch ? parseFloat(cpuMatch[1]) : '--';
+                    document.getElementById('cpu-usage').textContent = cpuPercent !== '--' ? `${cpuPercent}%` : '--';
+                } else {
+                    document.getElementById('cpu-usage').textContent = '--';
                 }
-            } else {
-                recentLogs.innerHTML = '<div class="log-entry" style="color: #666666; text-align: center; padding: 10px; font-family: \'Courier New\', monospace; font-size: 11px;">[EMPTY] NO_LOGS_AVAILABLE</div>';
+                
+                // Parse memory from object {free: "14Gi", total: "30Gi", used: "2.1Gi"}
+                if (systemData.memory) {
+                    const used = systemData.memory.used || '--';
+                    const total = systemData.memory.total || '--';
+                    document.getElementById('memory-usage').textContent = `${used} / ${total}`;
+                } else {
+                    document.getElementById('memory-usage').textContent = '--';
+                }
+                
+                // Parse disk from object {available: "3.4T", percent: "2%", total: "3.6T", used: "50G"}
+                if (systemData.disk) {
+                    document.getElementById('disk-usage').textContent = systemData.disk.percent || '--';
+                } else {
+                    document.getElementById('disk-usage').textContent = '--';
+                }
+                
+                document.getElementById('uptime').textContent = systemData.uptime || '--';
+                
+                // Update network status from network API
+                if (currentData.network && currentData.network.status) {
+                    const netStatus = currentData.network.status === 'online' ? 'ONLINE' : 
+                                     currentData.network.status === 'degraded' ? 'DEGRADED' : 'OFFLINE';
+                    document.getElementById('network-status').textContent = netStatus;
+                    document.getElementById('network-status').className = 
+                        netStatus === 'ONLINE' ? 'text-terminal' : 
+                        netStatus === 'DEGRADED' ? 'text-yellow-500' : 'text-red-500';
+                } else {
+                    document.getElementById('network-status').textContent = 'ONLINE';
+                }
             }
-        }
-
-        // New service monitoring functions
-        function updateCriticalServices() {
-            const servicesList = document.getElementById('services-list');
-            if (!servicesList) return;
             
+            // Update Claude Processes - check both APIs
+            const claudeProcesses = currentData.claude?.processes || currentData.status?.barbossa?.claude_processes || [];
+            const claudeCount = claudeProcesses.length;
+            
+            document.getElementById('claude-count').textContent = claudeCount.toString();
+            const processList = document.getElementById('claude-processes');
+            processList.innerHTML = '';
+            
+            if (claudeProcesses.length > 0) {
+                claudeProcesses.forEach(proc => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center p-1 bg-terminal/5 border border-terminal/20';
+                    item.innerHTML = `
+                        <span class="text-[10px]">PID: ${proc.pid}</span>
+                        <button onclick="killClaude(${proc.pid})" 
+                            class="text-[10px] px-1 border border-red-500/50 hover:bg-red-500/10 text-red-500">
+                            KILL
+                        </button>
+                    `;
+                    processList.appendChild(item);
+                });
+            } else {
+                processList.innerHTML = '<div class="text-terminal-dim text-[10px]">No active processes</div>';
+            }
+            
+            // Update Services - combine all service types
+            const services = currentData.services || {};
+            const servicesList = document.getElementById('services-list');
             servicesList.innerHTML = '';
             
-            // Define critical services to monitor
-            const criticalServices = [
-                { name: 'CLOUDFLARE_TUNNEL', check: 'cloudflared', type: 'process' },
-                { name: 'BARBOSSA_PORTAL', check: 'barbossa-portal', type: 'tmux' },
-                { name: 'DOCKER_DAEMON', check: 'docker', type: 'systemd' },
-                { name: 'REDIS_SERVER', check: 'redis', type: 'systemd' }
-            ];
+            // Combine docker, processes, and systemd services
+            const allServices = [];
             
-            if (currentData.services) {
-                for (const service of criticalServices) {
-                    let status = 'inactive';
-                    let statusClass = 'error';
-                    let statusSymbol = '[!!]';
-                    
-                    if (service.type === 'systemd' && currentData.services.systemd) {
-                        const svcStatus = currentData.services.systemd[service.check];
-                        if (svcStatus) {
-                            status = typeof svcStatus === 'object' ? svcStatus.status : svcStatus;
-                        }
-                    } else if (service.type === 'process' && currentData.services.processes) {
-                        const processStatus = currentData.services.processes[service.check];
-                        if (processStatus && processStatus.status === 'active') {
-                            status = 'active';
-                        }
-                    } else if (service.type === 'tmux' && currentData.services.tmux_sessions) {
-                        const session = currentData.services.tmux_sessions.find(s => s.name === service.check);
-                        if (session) {
-                            status = 'active';
-                        }
+            // Add key services from processes
+            if (services.processes) {
+                Object.entries(services.processes).forEach(([key, info]) => {
+                    if (key === 'barbossa_portal' || key === 'claude' || key === 'cloudflared') {
+                        allServices.push({
+                            name: info.name || key,
+                            status: info.status,
+                            type: 'process'
+                        });
                     }
-                    
-                    statusClass = status === 'active' ? 'success' : 'error';
-                    statusSymbol = status === 'active' ? '[OK]' : '[!!]';
-                    
-                    servicesList.innerHTML += `
-                        <div style="margin: 2px 0; display: flex; align-items: center; font-size: 10px; font-family: 'Courier New', monospace;">
-                            <span class="service-status ${status === 'active' ? 'active' : 'inactive'}"></span>
-                            <span class="log-entry ${statusClass}">${statusSymbol} ${service.name.padEnd(20, '.')}: ${status.toUpperCase()}</span>
-                        </div>
+                });
+            }
+            
+            // Add Docker status
+            if (services.docker) {
+                const dockerRunning = Object.keys(services.docker).length;
+                allServices.push({
+                    name: 'Docker',
+                    status: dockerRunning > 0 ? `${dockerRunning} containers` : 'no containers',
+                    type: 'docker'
+                });
+            }
+            
+            // Add tmux sessions
+            if (services.tmux_sessions) {
+                allServices.push({
+                    name: 'Tmux',
+                    status: `${services.tmux_sessions.length} sessions`,
+                    type: 'tmux'
+                });
+            }
+            
+            if (allServices.length > 0) {
+                allServices.forEach(service => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between items-center';
+                    const statusClass = service.status === 'active' || service.status.includes('container') || service.status.includes('session') ? 
+                        'text-terminal' : 'text-red-500';
+                    item.innerHTML = `
+                        <span class="text-terminal-dim text-[10px]">${service.name}:</span>
+                        <span class="${statusClass} text-[10px] uppercase">${service.status}</span>
                     `;
-                }
-                
-                // Add Claude processes to services
-                if (currentData.status?.barbossa?.claude_processes && currentData.status.barbossa.claude_processes.length > 0) {
-                    servicesList.innerHTML += `<div style="margin: 5px 0; border-top: 1px solid #222; padding-top: 5px;"></div>`;
-                    for (const proc of currentData.status.barbossa.claude_processes) {
-                        servicesList.innerHTML += `
-                            <div style="margin: 2px 0; display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-family: 'Courier New', monospace;">
-                                <span class="log-entry success">[PID:${proc.pid}] CLAUDE_PROCESS CPU:${proc.cpu}% MEM:${proc.mem}%</span>
-                                <button class="button danger" style="padding: 2px 6px; font-size: 9px;" onclick="killClaude(${proc.pid})">KILL</button>
-                            </div>
-                        `;
-                    }
-                }
-            }
-        }
-        
-        // Update comprehensive metrics and new sections
-        function updateComprehensiveData() {
-            // Update enhanced metrics if available
-            if (currentData.comprehensive && currentData.comprehensive.metrics) {
-                const m = currentData.comprehensive.metrics;
-                document.getElementById('enhanced-cpu').textContent = m.cpu_percent ? `${m.cpu_percent.toFixed(1)}%` : '-';
-                document.getElementById('enhanced-memory').textContent = m.memory_percent ? `${m.memory_percent.toFixed(1)}%` : '-';
-                document.getElementById('enhanced-disk').textContent = m.disk_percent ? `${m.disk_percent.toFixed(1)}%` : '-';
-                document.getElementById('network-io').textContent = m.network_recv_mb && m.network_sent_mb ? 
-                    `↓${(m.network_recv_mb/1024).toFixed(1)}G` : '-';
-                document.getElementById('load-avg').textContent = m.load_1min ? 
-                    `${m.load_1min.toFixed(2)}` : '-';
-                document.getElementById('processes').textContent = m.process_count || '-';
-                
-                // Update alerts if present
-                if (currentData.comprehensive.alerts) {
-                    const alertsSection = document.getElementById('alerts-section');
-                    const alertsContainer = document.getElementById('alerts-container');
-                    
-                    if (currentData.comprehensive.alerts.active > 0 && currentData.comprehensive.alerts.recent) {
-                        alertsSection.style.display = 'block';
-                        alertsContainer.innerHTML = '';
-                        for (const alert of currentData.comprehensive.alerts.recent.slice(0, 5)) {
-                            const levelClass = alert.level === 'critical' ? 'error' : 
-                                             alert.level === 'warning' ? 'warning' : 'info';
-                            alertsContainer.innerHTML += `
-                                <div class="log-entry ${levelClass}" style="margin: 3px 0;">
-                                    <span style="color: #f00;">[${alert.level?.toUpperCase()}]</span>
-                                    <span style="color: #fff;">${alert.message}</span>
-                                    <span style="color: #666; font-size: 9px;">${alert.details || ''}</span>
-                                </div>
-                            `;
-                        }
-                    } else {
-                        alertsSection.style.display = 'none';
-                    }
-                }
-            }
-            
-            // Update network status
-            if (currentData.network) {
-                // Update open ports
-                const portsDiv = document.getElementById('open-ports');
-                if (portsDiv && currentData.network.open_ports) {
-                    portsDiv.innerHTML = '';
-                    for (const port of currentData.network.open_ports.slice(0, 15)) {
-                        portsDiv.innerHTML += `
-                            <div style="margin: 2px 0; font-family: 'Courier New', monospace;">
-                                <span style="color: #0f0;">${String(port.port).padEnd(6, ' ')}</span>
-                                <span style="color: #999;">${port.service.padEnd(15, ' ')}</span>
-                                <span style="color: #666;">${port.address}</span>
-                            </div>
-                        `;
-                    }
-                }
-                
-                // Update connections
-                const connectionsDiv = document.getElementById('active-connections');
-                if (connectionsDiv && currentData.network.connections) {
-                    connectionsDiv.innerHTML = '';
-                    for (const conn of currentData.network.connections.slice(0, 10)) {
-                        if (conn.status === 'ESTABLISHED' || conn.status === 'LISTEN') {
-                            connectionsDiv.innerHTML += `
-                                <div style="margin: 2px 0; font-family: 'Courier New', monospace; font-size: 9px;">
-                                    <span style="color: #0f0;">${conn.local_address}:${conn.local_port}</span>
-                                    <span style="color: #666;"> → </span>
-                                    <span style="color: #999;">${conn.remote_address || 'N/A'}</span>
-                                    <span style="color: #666;">[${conn.status}]</span>
-                                </div>
-                            `;
-                        }
-                    }
-                }
-            }
-            
-            // Update projects
-            if (currentData.projects && currentData.projects.projects) {
-                const projectsDiv = document.getElementById('projects-overview');
-                if (projectsDiv) {
-                    projectsDiv.innerHTML = '';
-                    for (const [name, info] of Object.entries(currentData.projects.projects)) {
-                        const statusSymbol = info.has_changes ? '⚠' : '✓';
-                        const statusColor = info.has_changes ? '#ff0' : '#0f0';
-                        projectsDiv.innerHTML += `
-                            <div style="margin: 5px 0; padding: 5px; border-left: 2px solid ${statusColor};">
-                                <div style="font-size: 11px;">
-                                    <span style="color: ${statusColor};">${statusSymbol}</span>
-                                    <span style="color: #0f0; font-weight: bold;">${name}</span>
-                                    <span style="color: #666;">| ${info.type} | ${info.language}</span>
-                                </div>
-                                <div style="font-size: 10px; color: #999; margin-left: 15px;">
-                                    Branch: <span style="color: #0f0; font-family: monospace;">${info.branch || 'unknown'}</span>
-                                    ${info.has_changes ? '<span style="color: #ff0;"> [uncommitted changes]</span>' : ''}
-                                </div>
-                            </div>
-                        `;
-                    }
-                }
-            }
-        }
-        
-        function updateDockerContainers() {
-            const containerList = document.getElementById('docker-container-list');
-            if (!containerList) return;
-            
-            containerList.innerHTML = '';
-            let hasContainers = false;
-            
-            if (currentData.services?.docker) {
-                if (currentData.services.docker.error) {
-                    containerList.innerHTML = `<div class="log-entry error">[ERROR] ${currentData.services.docker.error}</div>`;
-                } else if (typeof currentData.services.docker === 'object') {
-                    for (const [container, info] of Object.entries(currentData.services.docker)) {
-                        if (typeof info === 'object' && info.status) {
-                            hasContainers = true;
-                            const statusClass = info.status === 'running' ? 'success' : 'warning';
-                            const statusSymbol = info.status === 'running' ? '[RUN]' : '[STOP]';
-                            const imageName = (info.image || 'unknown').split(':')[0].split('/').pop();
-                            containerList.innerHTML += `
-                                <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                                    ${statusSymbol} ${container.padEnd(25, '.')} ${imageName}
-                                    <div style="margin-left: 35px; color: #00aa00; font-size: 10px;">${info.full_status || ''}</div>
-                                </div>
-                            `;
-                        }
-                    }
-                }
-                
-                if (!hasContainers) {
-                    containerList.innerHTML = `<div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">[EMPTY] No Docker containers found</div>`;
-                }
+                    servicesList.appendChild(item);
+                });
             } else {
-                containerList.innerHTML = `<div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">[WAIT] Loading Docker status...</div>`;
+                servicesList.innerHTML = '<div class="text-terminal-dim text-[10px]">No services data</div>';
             }
-        }
-        
-        function updateTmuxSessions() {
-            const sessionList = document.getElementById('tmux-session-list');
-            if (!sessionList) return;
             
-            sessionList.innerHTML = '';
+            // Update Recent Logs
+            const changelogs = currentData.changelogs || currentData.status?.changelogs || [];
+            if (changelogs.length > 0) {
+                const logsList = document.getElementById('recent-logs');
+                logsList.innerHTML = '';
+                changelogs.slice(0, 10).forEach(log => {
+                    const filename = log.filename || log;
+                    const item = document.createElement('div');
+                    item.className = 'text-[10px] text-terminal-dim hover:text-terminal cursor-pointer';
+                    item.textContent = `▸ ${filename}`;
+                    item.onclick = () => viewLog(filename);
+                    logsList.appendChild(item);
+                });
+            }
             
-            if (currentData.services?.tmux_sessions && Array.isArray(currentData.services.tmux_sessions) && currentData.services.tmux_sessions.length > 0) {
-                for (const session of currentData.services.tmux_sessions) {
-                    const statusClass = session.attached ? 'success' : 'warning';
-                    const statusSymbol = session.attached ? '[ATT]' : '[DET]';
-                    sessionList.innerHTML += `
-                        <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                            ${statusSymbol} ${session.name.padEnd(25, '.')} WIN:${session.windows} ${session.status.toUpperCase()}
-                        </div>
+            // Update Security
+            const security = currentData.security || currentData.status?.security || {};
+            document.getElementById('security-violations').textContent = 
+                security.violations?.length || security.violation_count || '0';
+            document.getElementById('last-audit').textContent = 
+                security.last_audit_time || security.last_audit || '--';
+            
+            // Update Docker Containers
+            const docker = currentData.services?.docker || {};
+            const dockerList = document.getElementById('docker-containers');
+            dockerList.innerHTML = '';
+            
+            const dockerContainers = Object.entries(docker);
+            if (dockerContainers.length > 0) {
+                dockerContainers.slice(0, 5).forEach(([name, info]) => {
+                    const item = document.createElement('div');
+                    const statusClass = info.status === 'running' ? 'text-terminal' : 'text-red-500';
+                    item.className = 'text-[10px] flex justify-between';
+                    item.innerHTML = `
+                        <span class="text-terminal-dim truncate">${name}</span>
+                        <span class="${statusClass}">${info.full_status || info.status}</span>
                     `;
-                }
+                    dockerList.appendChild(item);
+                });
             } else {
-                sessionList.innerHTML = `<div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">[EMPTY] No tmux sessions active</div>`;
+                dockerList.innerHTML = '<div class="text-terminal-dim text-[10px]">No containers</div>';
             }
-        }
-        
-        function updateSystemdServices() {
-            const serviceList = document.getElementById('systemd-service-list');
-            if (!serviceList) return;
             
-            serviceList.innerHTML = '';
+            // Update Backup Status
+            if (currentData.backup) {
+                if (currentData.backup.last_backup) {
+                    const lastBackupDate = new Date(currentData.backup.last_backup);
+                    document.getElementById('last-backup').textContent = 
+                        isNaN(lastBackupDate.getTime()) ? currentData.backup.last_backup : lastBackupDate.toLocaleDateString();
+                }
+                const backupSize = currentData.backup.backup_size ? 
+                    `${currentData.backup.backup_size.toFixed(2)} MB` : '--';
+                document.getElementById('backup-size').textContent = backupSize;
+                document.getElementById('backup-count').textContent = currentData.backup.backup_count || '0';
+            }
             
-            if (currentData.services?.systemd && Object.keys(currentData.services.systemd).length > 0) {
-                const priorityServices = ['cloudflared', 'docker', 'redis'];
-                const sortedServices = [];
-                
-                // Add priority services first
-                for (const service of priorityServices) {
-                    if (currentData.services.systemd[service]) {
-                        sortedServices.push([service, currentData.services.systemd[service]]);
-                    }
-                }
-                
-                // Add other services
-                for (const [service, info] of Object.entries(currentData.services.systemd)) {
-                    if (!priorityServices.includes(service)) {
-                        sortedServices.push([service, info]);
-                    }
-                }
-                
-                // Display all services
-                for (const [service, info] of sortedServices) {
-                    const status = typeof info === 'object' ? info.status : info;
-                    const statusClass = status === 'active' ? 'success' : status === 'inactive' ? 'warning' : 'error';
-                    const statusSymbol = status === 'active' ? '[ACT]' : status === 'inactive' ? '[INACT]' : '[FAIL]';
-                    serviceList.innerHTML += `
-                        <div class="log-entry ${statusClass}" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                            ${statusSymbol} ${service.padEnd(20, '.')} ${status.toUpperCase()}
-                        </div>
+            // Update Projects
+            const projectsList = document.getElementById('projects-list');
+            projectsList.innerHTML = '';
+            const projectsData = currentData.projects?.projects || {};
+            const projectEntries = Object.entries(projectsData);
+            if (projectEntries.length > 0) {
+                projectEntries.slice(0, 7).forEach(([key, project]) => {
+                    const item = document.createElement('div');
+                    const hasChanges = project.has_changes ? '●' : '○';
+                    const changeClass = project.has_changes ? 'text-yellow-500' : 'text-terminal';
+                    item.className = 'text-[10px] text-terminal-dim hover:text-terminal cursor-pointer flex justify-between';
+                    item.innerHTML = `
+                        <span class="truncate">${project.name}</span>
+                        <span class="${changeClass}">${hasChanges}</span>
                     `;
-                }
+                    projectsList.appendChild(item);
+                });
             } else {
-                serviceList.innerHTML = `<div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">[WAIT] Loading systemd services...</div>`;
-            }
-        }
-        
-        function updateDavyJonesStatus() {
-            const davyStatus = document.getElementById('davy-status-info');
-            if (!davyStatus) return;
-            
-            davyStatus.innerHTML = '';
-            
-            // Check multiple sources for Davy Jones status
-            let isDavyRunning = false;
-            let davyDetails = {};
-            
-            // Check in Docker containers FIRST (most reliable)
-            if (currentData.services?.docker) {
-                for (const [container, info] of Object.entries(currentData.services.docker)) {
-                    if (container.toLowerCase().includes('davy') && info.status === 'running') {
-                        isDavyRunning = true;
-                        davyDetails.container = container;
-                        davyDetails.dockerStatus = info.full_status;
-                        break;
-                    }
-                }
+                projectsList.innerHTML = '<div class="text-terminal-dim text-[10px]">No projects</div>';
             }
             
-            // Check in processes
-            if (!isDavyRunning && currentData.services?.processes) {
-                const davyProcess = currentData.services.processes['davy_jones_intern'] || 
-                                   currentData.services.processes['barbossa_portal'];
-                if (davyProcess && davyProcess.status === 'active') {
-                    isDavyRunning = true;
-                }
-            }
-            
-            // Check in tmux sessions
-            if (!isDavyRunning && currentData.services?.tmux_sessions) {
-                const davySession = currentData.services.tmux_sessions.find(s => 
-                    s.name.includes('davy') || s.name.includes('jones'));
-                if (davySession) {
-                    isDavyRunning = true;
-                    davyDetails.session = davySession.name;
-                    davyDetails.attached = davySession.attached;
-                }
-            }
-            
-            // Status display
-            davyStatus.innerHTML = `
-                <div class="log-entry ${isDavyRunning ? 'success' : 'error'}" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                    [STATUS] BOT_SERVICE...................${isDavyRunning ? 'ONLINE' : 'OFFLINE'}
-                </div>
-            `;
-            
-            if (davyDetails.container) {
-                davyStatus.innerHTML += `
-                    <div class="log-entry success" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                        [DOCKER] ${davyDetails.container}
-                    </div>
-                    <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 10px; margin-left: 30px;">
-                        ${davyDetails.dockerStatus || 'Running'}
-                    </div>
-                `;
-            }
-            
-            if (davyDetails.session) {
-                davyStatus.innerHTML += `
-                    <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                        [SESSION] ${davyDetails.session} (${davyDetails.attached ? 'ATTACHED' : 'DETACHED'})
-                    </div>
-                `;
-            }
-            
-            // Add webhook endpoints
-            davyStatus.innerHTML += `
-                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                    [WEBHOOK] webhook.eastindiaonchaincompany.xyz
-                </div>
-                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                    [API_URL] api.eastindiaonchaincompany.xyz
-                </div>
-            `;
-            
-            // Add project path
-            davyStatus.innerHTML += `
-                <div class="log-entry info" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                    [PROJECT] ~/barbossa-engineer/projects/davy-jones-intern
-                </div>
-            `;
-            
-            // Add recent activity if available
-            if (currentData.changelogs) {
-                const davyChangelogs = currentData.changelogs.filter(log => 
-                    log.work_area === 'davy_jones' || log.filename.includes('davy'));
-                if (davyChangelogs.length > 0) {
-                    const recent = davyChangelogs[0];
-                    davyStatus.innerHTML += `
-                        <div class="log-entry warning" style="font-family: 'Courier New', monospace; font-size: 11px;">
-                            [LAST_WORK] ${recent.timestamp}
-                        </div>
+            // Update Workflows
+            const workflowsList = document.getElementById('workflows-list');
+            workflowsList.innerHTML = '';
+            const workflowsData = currentData.workflows?.workflows || {};
+            const workflowEntries = Object.entries(workflowsData);
+            if (workflowEntries.length > 0) {
+                workflowEntries.slice(0, 5).forEach(([key, workflow]) => {
+                    const item = document.createElement('div');
+                    item.className = 'text-[10px] flex justify-between';
+                    const statusClass = workflow.status === 'active' ? 'text-terminal' : 'text-yellow-500';
+                    item.innerHTML = `
+                        <span class="text-terminal-dim">${workflow.name || key}</span>
+                        <span class="${statusClass}">${workflow.status || 'ready'}</span>
                     `;
-                }
+                    workflowsList.appendChild(item);
+                });
+            } else {
+                workflowsList.innerHTML = '<div class="text-terminal-dim text-[10px]">No active workflows</div>';
             }
-        }
-        
-        function switchServiceTab(tabName) {
-            // Update tab buttons
-            document.querySelectorAll('#service-monitor-tabs .tab').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            event.target.classList.add('active');
             
-            // Hide all service tabs
-            document.querySelectorAll('.service-tab-content').forEach(content => {
-                content.style.display = 'none';
-            });
-            
-            // Show selected tab
-            const selectedTab = document.getElementById(`${tabName}-services`);
-            if (selectedTab) {
-                selectedTab.style.display = 'block';
-                selectedTab.classList.add('active');
+            // Update Performance Analytics
+            const analyticsData = currentData.analytics?.analytics || currentData.comprehensive?.metrics || {};
+            if (analyticsData) {
+                document.getElementById('avg-response-time').textContent = 
+                    analyticsData.avg_response_time ? `${analyticsData.avg_response_time}ms` : 
+                    analyticsData.cpu_percent ? `CPU: ${analyticsData.cpu_percent}%` : '--';
+                document.getElementById('request-rate').textContent = 
+                    analyticsData.request_rate || 
+                    analyticsData.network_recv_mbps ? `${analyticsData.network_recv_mbps.toFixed(2)} Mbps` : '--';
+                document.getElementById('error-rate').textContent = 
+                    analyticsData.error_rate ? `${analyticsData.error_rate}%` : 
+                    analyticsData.memory_percent ? `Mem: ${analyticsData.memory_percent}%` : '0%';
             }
+            
+            // Update Anomalies
+            const anomaliesList = document.getElementById('anomalies-list');
+            anomaliesList.innerHTML = '';
+            const anomaliesData = currentData.anomalies?.anomalies || [];
+            const anomaliesMessage = currentData.anomalies?.message || '';
+            if (anomaliesData.length > 0) {
+                anomaliesData.forEach(anomaly => {
+                    const item = document.createElement('div');
+                    item.className = 'text-[10px] text-yellow-500';
+                    item.textContent = `⚠ ${anomaly.description || anomaly}`;
+                    anomaliesList.appendChild(item);
+                });
+            } else if (anomaliesMessage) {
+                anomaliesList.innerHTML = `<div class="text-terminal-dim text-[10px]">${anomaliesMessage}</div>`;
+            } else {
+                anomaliesList.innerHTML = '<div class="text-terminal text-[10px]">✓ System normal</div>';
+            }
+            
+            // Update Integrations
+            const integrationsList = document.getElementById('integrations-list');
+            integrationsList.innerHTML = '';
+            const integrationsData = currentData.integrations?.integrations || [];
+            if (Array.isArray(integrationsData) && integrationsData.length > 0) {
+                integrationsData.slice(0, 5).forEach(integration => {
+                    const item = document.createElement('div');
+                    item.className = 'flex justify-between text-[10px]';
+                    const statusClass = integration.status === 'active' ? 'text-terminal' : 'text-red-500';
+                    item.innerHTML = `
+                        <span class="text-terminal-dim truncate">${integration.name}</span>
+                        <span class="${statusClass}">${integration.status}</span>
+                    `;
+                    integrationsList.appendChild(item);
+                });
+            } else {
+                integrationsList.innerHTML = '<div class="text-terminal-dim text-[10px]">No integrations</div>';
+            }
+            
+            // Update GitHub Repos
+            const githubRepos = document.getElementById('github-repos');
+            githubRepos.innerHTML = '';
+            if (currentData.githubRepos && currentData.githubRepos.repositories) {
+                currentData.githubRepos.repositories.slice(0, 5).forEach(repo => {
+                    const item = document.createElement('div');
+                    item.className = 'text-[10px] text-terminal-dim hover:text-terminal';
+                    item.textContent = `▸ ${repo.name || repo}`;
+                    githubRepos.appendChild(item);
+                });
+            } else {
+                githubRepos.innerHTML = '<div class="text-terminal-dim text-[10px]">No repos</div>';
+            }
+            
+            // Update Optimization Suggestions
+            const optimizationList = document.getElementById('optimization-suggestions');
+            optimizationList.innerHTML = '';
+            const optimizationData = currentData.optimization;
+            if (optimizationData && optimizationData.suggestions && Array.isArray(optimizationData.suggestions)) {
+                optimizationData.suggestions.forEach(suggestion => {
+                    const item = document.createElement('div');
+                    const priority = suggestion.priority || 'low';
+                    const priorityClass = priority === 'high' ? 'text-red-500' : 
+                                        priority === 'medium' ? 'text-yellow-500' : 'text-terminal-dim';
+                    item.className = `text-[10px] ${priorityClass}`;
+                    item.innerHTML = `[${priority.toUpperCase()}] ${suggestion.description || suggestion}`;
+                    optimizationList.appendChild(item);
+                });
+            } else if (optimizationData === null) {
+                optimizationList.innerHTML = '<div class="text-terminal-dim text-[10px]">No optimization data</div>';
+            } else {
+                optimizationList.innerHTML = '<div class="text-terminal text-[10px]">✓ System optimized</div>';
+            }
+            
+            // Update Webhooks
+            const webhooksList = document.getElementById('webhooks-list');
+            webhooksList.innerHTML = '';
+            const webhooksData = currentData.webhooks?.webhooks || {};
+            const webhookEntries = Object.entries(webhooksData);
+            if (webhookEntries.length > 0) {
+                webhookEntries.slice(0, 5).forEach(([key, webhook]) => {
+                    const item = document.createElement('div');
+                    const statusClass = webhook.active ? 'text-terminal' : 'text-terminal-dim';
+                    item.className = `text-[10px] ${statusClass}`;
+                    item.textContent = `▸ ${webhook.name || key}`;
+                    webhooksList.appendChild(item);
+                });
+            } else {
+                webhooksList.innerHTML = '<div class="text-terminal-dim text-[10px]">No active webhooks</div>';
+            }
+            
+            // Update timestamp
+            document.getElementById('timestamp').textContent = new Date().toLocaleTimeString();
         }
         
         async function triggerBarbossa(area) {
@@ -1877,7 +1035,7 @@
                 alert(`❌ Error: ${error.message}`);
             }
         }
-
+        
         async function killClaude(pid) {
             if (!confirm(`Kill Claude process ${pid}?`)) return;
             
@@ -1888,806 +1046,54 @@
                     body: JSON.stringify({ pid })
                 });
                 const result = await response.json();
-                alert(result.success ? `✅ ${result.message}` : `❌ ${result.error}`);
-                fetchData();
+                if (result.success) {
+                    setTimeout(fetchData, 1000);
+                } else {
+                    alert(`Error: ${result.error}`);
+                }
             } catch (error) {
-                alert(`❌ Error: ${error.message}`);
+                alert(`Error: ${error.message}`);
             }
         }
-
-        async function clearLogs(days) {
-            if (!confirm(`Archive and clear logs older than ${days} days?`)) return;
-            
-            try {
-                const response = await fetch('/api/clear-logs', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ older_than_days: days })
-                });
-                const result = await response.json();
-                alert(`✅ Archived ${result.archived_count} files to ${result.archive_location}`);
-                fetchData();
-            } catch (error) {
-                alert(`❌ Error: ${error.message}`);
-            }
-        }
-
+        
         async function viewLog(filename) {
-            const modal = document.getElementById('logModal');
-            const modalContent = document.getElementById('modal-content');
-            
-            modal.style.display = 'block';
-            document.getElementById('modal-title').textContent = `Log: ${filename}`;
-            modalContent.innerHTML = '<div style="color: #ffff00; text-align: center; padding: 20px;">Loading...</div>';
-            
             try {
                 const response = await fetch(`/api/log/${filename}`);
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                const data = await response.json();
-                
-                if (data.error) {
-                    modalContent.innerHTML = `<div style="color: #ff0000;">Error: ${data.error}</div>`;
-                } else {
-                    modalContent.innerHTML = `<div class="modal-log-content">${data.content || 'No content'}</div>`;
+                const result = await response.json();
+                if (result.success) {
+                    const modal = document.getElementById('logModal');
+                    const content = document.getElementById('modal-log-content');
+                    content.innerHTML = `<pre class="text-terminal whitespace-pre-wrap">${result.content}</pre>`;
+                    modal.style.display = 'block';
                 }
             } catch (error) {
-                modalContent.innerHTML = `<div style="color: #ff0000;">Error loading log: ${error.message}</div>`;
+                alert(`Error: ${error.message}`);
             }
         }
-
+        
         function closeModal() {
             document.getElementById('logModal').style.display = 'none';
         }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            
-            event.target.classList.add('active');
-            document.getElementById(tabName).classList.add('active');
-        }
-
-        function refreshStatus() {
-            fetchData();
-        }
-
-        function searchLogs() {
-            const search = document.getElementById('log-search').value.toLowerCase();
-            const entries = document.querySelectorAll('#recent-logs .log-entry');
-            let visibleCount = 0;
-            
-            entries.forEach(entry => {
-                const text = entry.textContent.toLowerCase();
-                if (text.includes(search) || search === '') {
-                    entry.style.display = 'block';
-                    visibleCount++;
-                } else {
-                    entry.style.display = 'none';
-                }
-            });
-            
-            // Show search results count
-            if (search && visibleCount === 0) {
-                const searchResult = document.createElement('div');
-                searchResult.className = 'log-entry';
-                searchResult.style.color = '#888';
-                searchResult.textContent = `No logs found matching "${search}"`;
-                document.getElementById('recent-logs').appendChild(searchResult);
-            }
-        }
-
-        function showArchiveDialog() {
-            const days = prompt('Archive logs older than how many days?', '7');
-            if (days && !isNaN(days)) {
-                clearLogs(parseInt(days));
-            }
-        }
-
-        function viewFullLogs() {
-            // Create a comprehensive log viewer modal
-            const modal = document.getElementById('logModal');
-            modal.style.display = 'block';
-            document.getElementById('modal-title').textContent = 'Full Log Viewer';
-            
-            let logContent = '<div style="padding: 10px;">';
-            logContent += '<h3>Select a log to view:</h3>';
-            logContent += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0;">';
-            
-            // Add Barbossa logs
-            logContent += '<div><strong>📝 Barbossa Logs:</strong><br>';
-            for (const log of currentData.status?.barbossa?.recent_logs || []) {
-                logContent += `<a href="#" onclick="viewLog('${log.name}'); return false;" style="color: #00ff00;">• ${log.name}</a><br>`;
-            }
-            logContent += '</div>';
-            
-            // Add Claude outputs
-            logContent += '<div><strong>🤖 Claude Outputs:</strong><br>';
-            for (const output of currentData.claude || []) {
-                logContent += `<a href="#" onclick="viewLog('${output.filename}'); return false;" style="color: #00ff00;">• ${output.filename}</a><br>`;
-            }
-            logContent += '</div>';
-            
-            // Add Changelogs
-            logContent += '<div><strong>📜 Recent Changelogs:</strong><br>';
-            for (const log of currentData.changelogs?.slice(0, 10) || []) {
-                logContent += `<a href="#" onclick="viewLog('${log.filename}'); return false;" style="color: #00ff00;">• ${log.filename}</a><br>`;
-            }
-            logContent += '</div>';
-            
-            // Add Security logs
-            logContent += '<div><strong>🔒 Security Logs:</strong><br>';
-            logContent += `<a href="#" onclick="viewLog('audit.log'); return false;" style="color: #00ff00;">• audit.log</a><br>`;
-            logContent += `<a href="#" onclick="viewLog('security_violations.log'); return false;" style="color: #00ff00;">• security_violations.log</a><br>`;
-            logContent += '</div>';
-            
-            logContent += '</div>';
-            logContent += '<div style="margin-top: 20px; text-align: center;">';
-            logContent += '<button class="button secondary" onclick="fetchData(); viewFullLogs();">🔄 Refresh List</button>';
-            logContent += '</div>';
-            logContent += '</div>';
-            
-            document.getElementById('modal-content').innerHTML = logContent;
-        }
-
-        // Update time and system status
-        setInterval(() => {
-            const now = new Date();
-            document.getElementById('system-time').textContent = 
-                now.toISOString().replace('T', ' ').substring(0, 19) + ' UTC';
-                
-            // Update portal status indicator
-            const portalStatus = document.getElementById('portal-status');
-            if (portalStatus) {
-                portalStatus.className = 'status-badge status-online';
-                portalStatus.textContent = 'Portal Online';
-            }
-        }, 1000);
-
-        // Initial load and auto-refresh with better error handling
+        
+        // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            // Initial load
             fetchData();
+            refreshSessions();
+            loadAllowedRepositories();
             
-            // Auto-refresh every 30 seconds
             setInterval(() => {
-                try {
-                    fetchData();
-                } catch (error) {
-                    console.warn('Auto-refresh failed:', error);
-                }
+                fetchData();
+                refreshSessions();
             }, 30000);
         });
         
-        // Load immediately if DOM already ready
-        if (document.readyState === 'loading') {
-            // DOM still loading, wait for it
-        } else {
-            // DOM ready
-            fetchData();
-            setInterval(fetchData, 30000);
-        }
-
         // Close modal on click outside
         window.onclick = function(event) {
             const modal = document.getElementById('logModal');
-            if (event.target === modal) {
+            if (event.target == modal) {
                 modal.style.display = 'none';
             }
         }
-
-        // ============================================================================
-        // NEW ENHANCED API V2 FUNCTIONS
-        // ============================================================================
-        
-        // Update all enhanced features with V2 API data
-        function updateEnhancedFeatures() {
-            // Update backups
-            if (currentData.backups) {
-                updateBackupList();
-            }
-            
-            // Update database stats
-            if (currentData.database) {
-                updateDatabaseInfo();
-            }
-            
-            // Update alerts
-            if (currentData.alerts) {
-                updateAlertsList();
-            }
-            
-            // Update webhooks
-            if (currentData.webhooks) {
-                updateWebhooksList();
-            }
-            
-            // Update analytics
-            if (currentData.analytics) {
-                updateAnalyticsSummary();
-            }
-        }
-        
-        // BACKUP & RESTORE FUNCTIONS
-        async function createBackup(type = 'full') {
-            const includeLogs = confirm('Include log files in backup?');
-            try {
-                const response = await fetch('/api/v2/backup/create', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                        type: type,
-                        include_logs: includeLogs,
-                        compression: 'gzip'
-                    })
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    alert(`✅ Backup created: ${result.backup.name}\nSize: ${(result.backup.size / 1024 / 1024).toFixed(2)} MB`);
-                    refreshBackups();
-                } else {
-                    alert(`❌ Backup failed: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error creating backup: ${error.message}`);
-            }
-        }
-        
-        async function refreshBackups() {
-            try {
-                const response = await fetch('/api/v2/backup/list');
-                const data = await response.json();
-                currentData.backups = data;
-                updateBackupList();
-            } catch (error) {
-                console.error('Failed to refresh backups:', error);
-            }
-        }
-        
-        function updateBackupList() {
-            const backupList = document.getElementById('backup-list');
-            if (!backupList || !currentData.backups) return;
-            
-            backupList.innerHTML = '';
-            if (currentData.backups.backups && currentData.backups.backups.length > 0) {
-                for (const backup of currentData.backups.backups.slice(0, 5)) {
-                    const sizeInMB = (backup.size / 1024 / 1024).toFixed(2);
-                    const date = new Date(backup.created_at).toLocaleString();
-                    backupList.innerHTML += `
-                        <div class="log-entry" style="display: flex; justify-content: space-between; align-items: center;">
-                            <div>
-                                <span style="color: #0f0;">[${backup.type.toUpperCase()}]</span>
-                                <span style="color: #999; font-size: 9px;">${date}</span>
-                                <span style="color: #666;">${sizeInMB} MB</span>
-                            </div>
-                            <div>
-                                <button class="button" onclick="restoreBackup('${backup.id}')" style="padding: 2px 6px; font-size: 9px;">RESTORE</button>
-                                <button class="button danger" onclick="deleteBackup('${backup.id}')" style="padding: 2px 6px; font-size: 9px;">DELETE</button>
-                            </div>
-                        </div>
-                    `;
-                }
-            } else {
-                backupList.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No backups available</div>';
-            }
-        }
-        
-        async function restoreBackup(backupId) {
-            if (!confirm('Are you sure you want to restore from this backup? Current data will be overwritten.')) return;
-            
-            try {
-                const response = await fetch(`/api/v2/backup/${backupId}/restore`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ type: 'config', force: false })
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    alert(`✅ Restore completed: ${result.restored_files.length} files restored`);
-                    location.reload();
-                } else {
-                    alert(`❌ Restore failed: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error restoring backup: ${error.message}`);
-            }
-        }
-        
-        async function deleteBackup(backupId) {
-            if (!confirm('Delete this backup permanently?')) return;
-            
-            try {
-                const response = await fetch(`/api/v2/backup/${backupId}/delete`, {
-                    method: 'DELETE'
-                });
-                const result = await response.json();
-                if (result.status === 'success') {
-                    alert('✅ Backup deleted');
-                    refreshBackups();
-                } else {
-                    alert(`❌ Delete failed: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error deleting backup: ${error.message}`);
-            }
-        }
-        
-        // ADVANCED SEARCH FUNCTIONS
-        function setSearchCategory(category) {
-            searchCategory = category;
-            document.querySelectorAll('.tabs .tab').forEach(tab => tab.classList.remove('active'));
-            event.target.classList.add('active');
-        }
-        
-        async function performAdvancedSearch() {
-            const query = document.getElementById('advanced-search-input').value;
-            if (!query) return;
-            
-            const resultsDiv = document.getElementById('search-results');
-            resultsDiv.innerHTML = '<div style="color: #ff0; text-align: center; padding: 20px;">Searching...</div>';
-            
-            try {
-                const response = await fetch(`/api/v2/search?q=${encodeURIComponent(query)}&category=${searchCategory}&limit=20`);
-                const data = await response.json();
-                
-                resultsDiv.innerHTML = '';
-                
-                if (data.total_results === 0) {
-                    resultsDiv.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No results found</div>';
-                    return;
-                }
-                
-                // Display results by category
-                if (data.results.projects && data.results.projects.length > 0) {
-                    resultsDiv.innerHTML += '<div style="color: #0f0; font-size: 10px; margin: 5px 0;">PROJECTS:</div>';
-                    for (const project of data.results.projects) {
-                        resultsDiv.innerHTML += `<div class="log-entry" style="font-size: 10px;">• ${project.name}: ${project.description}</div>`;
-                    }
-                }
-                
-                if (data.results.tasks && data.results.tasks.length > 0) {
-                    resultsDiv.innerHTML += '<div style="color: #0f0; font-size: 10px; margin: 5px 0;">TASKS:</div>';
-                    for (const task of data.results.tasks) {
-                        resultsDiv.innerHTML += `<div class="log-entry" style="font-size: 10px;">• ${task.title} (${task.project_name})</div>`;
-                    }
-                }
-                
-                if (data.results.logs && data.results.logs.length > 0) {
-                    resultsDiv.innerHTML += '<div style="color: #0f0; font-size: 10px; margin: 5px 0;">LOGS:</div>';
-                    for (const log of data.results.logs.slice(0, 5)) {
-                        resultsDiv.innerHTML += `<div class="log-entry" style="font-size: 10px;">• ${log.file}:${log.line_number} - ${log.preview}</div>`;
-                    }
-                }
-                
-                if (data.results.config && data.results.config.length > 0) {
-                    resultsDiv.innerHTML += '<div style="color: #0f0; font-size: 10px; margin: 5px 0;">CONFIG:</div>';
-                    for (const config of data.results.config) {
-                        resultsDiv.innerHTML += `<div class="log-entry" style="font-size: 10px;">• ${config.file}</div>`;
-                    }
-                }
-                
-                resultsDiv.innerHTML += `<div style="color: #666; font-size: 9px; margin-top: 10px; text-align: center;">Total: ${data.total_results} results</div>`;
-                
-            } catch (error) {
-                resultsDiv.innerHTML = `<div style="color: #f00; text-align: center; padding: 20px;">Search error: ${error.message}</div>`;
-            }
-        }
-        
-        // PERFORMANCE MONITORING FUNCTIONS
-        async function runBenchmark(type = 'quick') {
-            const perfResults = document.getElementById('performance-results');
-            perfResults.innerHTML = '<div style="color: #ff0; text-align: center; padding: 20px;">Running benchmark...</div>';
-            
-            try {
-                const response = await fetch('/api/v2/performance/benchmark', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        type: type,
-                        duration: type === 'quick' ? 30 : 60,
-                        tests: ['cpu', 'memory', 'disk']
-                    })
-                });
-                const data = await response.json();
-                
-                if (data.status === 'success') {
-                    perfResults.innerHTML = '<div style="color: #0f0; font-size: 11px; margin-bottom: 10px;">BENCHMARK RESULTS:</div>';
-                    for (const test of data.benchmark_results.tests) {
-                        perfResults.innerHTML += `
-                            <div class="log-entry" style="margin: 5px 0;">
-                                <span style="color: #0f0;">[${test.type.toUpperCase()}]</span>
-                                <span style="color: #fff;">Avg: ${test.avg_usage?.toFixed(2) || 'N/A'}%</span>
-                                <span style="color: #999;">Max: ${test.max_usage?.toFixed(2) || 'N/A'}%</span>
-                                <span style="color: #666;">Duration: ${test.duration?.toFixed(1)}s</span>
-                            </div>
-                        `;
-                    }
-                    perfResults.innerHTML += `<div style="color: #666; font-size: 9px; margin-top: 10px;">Total duration: ${data.benchmark_results.total_duration.toFixed(1)}s</div>`;
-                } else {
-                    perfResults.innerHTML = `<div style="color: #f00;">Benchmark failed: ${data.error}</div>`;
-                }
-            } catch (error) {
-                perfResults.innerHTML = `<div style="color: #f00;">Error: ${error.message}</div>`;
-            }
-        }
-        
-        async function getPerformanceRecommendations() {
-            const perfResults = document.getElementById('performance-results');
-            perfResults.innerHTML = '<div style="color: #ff0; text-align: center; padding: 20px;">Analyzing performance...</div>';
-            
-            try {
-                const response = await fetch('/api/v2/performance/recommendations');
-                const data = await response.json();
-                
-                if (data.status === 'success' && data.recommendations) {
-                    perfResults.innerHTML = '<div style="color: #0f0; font-size: 11px; margin-bottom: 10px;">PERFORMANCE RECOMMENDATIONS:</div>';
-                    
-                    for (const rec of data.recommendations) {
-                        const severityColor = rec.severity === 'critical' ? '#f00' : 
-                                            rec.severity === 'high' ? '#ff0' : 
-                                            rec.severity === 'medium' ? '#fa0' : '#0f0';
-                        
-                        perfResults.innerHTML += `
-                            <div style="border: 1px solid ${severityColor}; padding: 5px; margin: 5px 0;">
-                                <div style="color: ${severityColor}; font-size: 10px;">[${rec.severity.toUpperCase()}] ${rec.title}</div>
-                                <div style="color: #fff; font-size: 9px; margin: 3px 0;">${rec.description}</div>
-                                <div style="color: #666; font-size: 9px;">Current: ${rec.current_value?.toFixed(1)}% | Threshold: ${rec.threshold}%</div>
-                            </div>
-                        `;
-                    }
-                    
-                    if (data.recommendations.length === 0) {
-                        perfResults.innerHTML += '<div style="color: #0f0; text-align: center; padding: 20px;">✅ System performance is optimal!</div>';
-                    }
-                } else {
-                    perfResults.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No recommendations available</div>';
-                }
-            } catch (error) {
-                perfResults.innerHTML = `<div style="color: #f00;">Error: ${error.message}</div>`;
-            }
-        }
-        
-        // DATABASE MANAGEMENT FUNCTIONS
-        async function getDatabaseStats() {
-            try {
-                const response = await fetch('/api/v2/database/stats');
-                const data = await response.json();
-                currentData.database = data;
-                updateDatabaseInfo();
-            } catch (error) {
-                console.error('Failed to get database stats:', error);
-            }
-        }
-        
-        function updateDatabaseInfo() {
-            if (!currentData.database || !currentData.database.database_stats) return;
-            
-            const stats = currentData.database.database_stats;
-            document.getElementById('db-size').textContent = (stats.total_size / 1024 / 1024).toFixed(2) + ' MB';
-            document.getElementById('db-records').textContent = stats.total_records || '0';
-            
-            const dbList = document.getElementById('database-list');
-            if (dbList && stats.databases) {
-                dbList.innerHTML = '';
-                for (const db of stats.databases) {
-                    const sizeInKB = (db.size / 1024).toFixed(2);
-                    dbList.innerHTML += `
-                        <div class="log-entry" style="font-size: 10px;">
-                            <span style="color: #0f0;">${db.name}</span>
-                            <span style="color: #999;">Size: ${sizeInKB} KB</span>
-                            <span style="color: #666;">Tables: ${db.tables?.length || 0}</span>
-                            <span style="color: #666;">Records: ${db.total_records || 0}</span>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
-        async function optimizeDatabase(database = 'all') {
-            if (!confirm(`Optimize ${database === 'all' ? 'all databases' : database}? This may take a few moments.`)) return;
-            
-            try {
-                const response = await fetch('/api/v2/database/optimize', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        database: database,
-                        operations: ['vacuum', 'analyze']
-                    })
-                });
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    const savedMB = (result.total_space_saved / 1024 / 1024).toFixed(2);
-                    alert(`✅ Optimization complete!\nSpace saved: ${savedMB} MB`);
-                    getDatabaseStats();
-                } else {
-                    alert(`❌ Optimization failed: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error: ${error.message}`);
-            }
-        }
-        
-        // ANALYTICS FUNCTIONS
-        async function updateAnalytics() {
-            const period = document.getElementById('analytics-period').value;
-            
-            try {
-                const response = await fetch(`/api/v2/analytics/summary?period=${period}`);
-                const data = await response.json();
-                currentData.analytics = data;
-                updateAnalyticsSummary();
-            } catch (error) {
-                console.error('Failed to update analytics:', error);
-            }
-        }
-        
-        function updateAnalyticsSummary() {
-            const summaryDiv = document.getElementById('analytics-summary');
-            if (!summaryDiv || !currentData.analytics || !currentData.analytics.analytics) return;
-            
-            const analytics = currentData.analytics.analytics;
-            summaryDiv.innerHTML = `
-                <div style="padding: 10px;">
-                    <div style="color: #0f0; font-size: 11px; margin-bottom: 10px;">PERIOD: ${analytics.period}</div>
-                    
-                    <div style="margin: 10px 0;">
-                        <div style="color: #999; font-size: 10px;">SYSTEM</div>
-                        <div style="color: #fff; font-size: 10px;">• Uptime: ${analytics.system?.uptime_days?.toFixed(1) || 0} days</div>
-                        <div style="color: #fff; font-size: 10px;">• Process Count: ${analytics.system?.process_count || 0}</div>
-                    </div>
-                    
-                    <div style="margin: 10px 0;">
-                        <div style="color: #999; font-size: 10px;">PROJECTS</div>
-                        <div style="color: #fff; font-size: 10px;">• Total: ${analytics.projects?.total || 0}</div>
-                        <div style="color: #fff; font-size: 10px;">• Active: ${analytics.projects?.by_status?.active || 0} (${analytics.projects?.active_percentage?.toFixed(1) || 0}%)</div>
-                    </div>
-                    
-                    <div style="margin: 10px 0;">
-                        <div style="color: #999; font-size: 10px;">TASKS</div>
-                        <div style="color: #fff; font-size: 10px;">• Total: ${analytics.tasks?.total || 0}</div>
-                        <div style="color: #fff; font-size: 10px;">• Completion Rate: ${analytics.tasks?.completion_rate?.toFixed(1) || 0}%</div>
-                    </div>
-                    
-                    <div style="margin: 10px 0;">
-                        <div style="color: #999; font-size: 10px;">SECURITY</div>
-                        <div style="color: #fff; font-size: 10px;">• Total Audits: ${analytics.security?.total_audits || 0}</div>
-                        <div style="color: ${analytics.security?.total_violations > 0 ? '#f00' : '#0f0'}; font-size: 10px;">• Violations: ${analytics.security?.total_violations || 0}</div>
-                    </div>
-                </div>
-            `;
-        }
-        
-        // ALERT MANAGEMENT FUNCTIONS
-        async function createAlert() {
-            const name = document.getElementById('alert-name').value;
-            const metric = document.getElementById('alert-metric').value;
-            const threshold = document.getElementById('alert-threshold').value;
-            
-            if (!name || !threshold) {
-                alert('Please provide alert name and threshold');
-                return;
-            }
-            
-            try {
-                const response = await fetch('/api/v2/monitoring/alerts', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: name,
-                        metric: metric,
-                        threshold: parseFloat(threshold),
-                        severity: threshold > 90 ? 'critical' : threshold > 75 ? 'high' : 'medium',
-                        enabled: true
-                    })
-                });
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    alert('✅ Alert created successfully');
-                    document.getElementById('alert-name').value = '';
-                    document.getElementById('alert-threshold').value = '';
-                    refreshAlerts();
-                } else {
-                    alert(`❌ Failed to create alert: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error: ${error.message}`);
-            }
-        }
-        
-        async function refreshAlerts() {
-            try {
-                const response = await fetch('/api/v2/monitoring/alerts');
-                const data = await response.json();
-                currentData.alerts = data;
-                updateAlertsList();
-            } catch (error) {
-                console.error('Failed to refresh alerts:', error);
-            }
-        }
-        
-        function updateAlertsList() {
-            const alertList = document.getElementById('alert-list');
-            if (!alertList || !currentData.alerts) return;
-            
-            alertList.innerHTML = '';
-            
-            if (currentData.alerts.active_alerts && currentData.alerts.active_alerts.length > 0) {
-                alertList.innerHTML += '<div style="color: #f00; font-size: 10px; margin-bottom: 5px;">ACTIVE ALERTS:</div>';
-                for (const alert of currentData.alerts.active_alerts) {
-                    alertList.innerHTML += `
-                        <div class="log-entry error" style="font-size: 10px;">
-                            ⚠ ${alert.name}: ${alert.current_value?.toFixed(1)}% (threshold: ${alert.threshold}%)
-                        </div>
-                    `;
-                }
-            }
-            
-            if (currentData.alerts.alerts && currentData.alerts.alerts.length > 0) {
-                alertList.innerHTML += '<div style="color: #0f0; font-size: 10px; margin: 10px 0 5px 0;">CONFIGURED ALERTS:</div>';
-                for (const alert of currentData.alerts.alerts) {
-                    const statusColor = alert.enabled ? '#0f0' : '#666';
-                    alertList.innerHTML += `
-                        <div class="log-entry" style="font-size: 10px;">
-                            <span style="color: ${statusColor};">[${alert.enabled ? 'ON' : 'OFF'}]</span>
-                            ${alert.name} - ${alert.metric} > ${alert.threshold}%
-                            <span style="color: #666;">(${alert.severity})</span>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
-        // WEBHOOK INTEGRATION FUNCTIONS
-        function updateWebhooksList() {
-            const webhookList = document.getElementById('webhook-list');
-            if (!webhookList || !currentData.webhooks) return;
-            
-            webhookList.innerHTML = '';
-            
-            if (currentData.webhooks.webhooks && currentData.webhooks.webhooks.length > 0) {
-                for (const webhook of currentData.webhooks.webhooks) {
-                    const statusColor = webhook.status === 'healthy' ? '#0f0' : '#f00';
-                    const statusText = webhook.enabled ? 'ENABLED' : 'DISABLED';
-                    
-                    webhookList.innerHTML += `
-                        <div class="log-entry" style="font-size: 10px;">
-                            <span style="color: ${statusColor};">[${statusText}]</span>
-                            ${webhook.name}
-                            <span style="color: #666;">Calls: ${webhook.total_calls} (Failed: ${webhook.failed_calls})</span>
-                        </div>
-                    `;
-                }
-            } else {
-                webhookList.innerHTML = '<div style="color: #666; text-align: center; padding: 20px;">No webhooks configured</div>';
-            }
-        }
-        
-        function showWebhookDialog() {
-            const name = prompt('Webhook name:');
-            if (!name) return;
-            
-            const url = prompt('Webhook URL:');
-            if (!url) return;
-            
-            const events = prompt('Events (comma-separated, e.g., system.alert,backup.created):');
-            if (!events) return;
-            
-            createWebhook(name, url, events.split(',').map(e => e.trim()));
-        }
-        
-        async function createWebhook(name, url, events) {
-            try {
-                const response = await fetch('/api/v2/integration/webhooks', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        name: name,
-                        url: url,
-                        events: events,
-                        enabled: true
-                    })
-                });
-                const result = await response.json();
-                
-                if (result.status === 'success') {
-                    alert('✅ Webhook created successfully');
-                    location.reload();
-                } else {
-                    alert(`❌ Failed to create webhook: ${result.error}`);
-                }
-            } catch (error) {
-                alert(`❌ Error: ${error.message}`);
-            }
-        }
-        
-        // REAL-TIME MONITORING FUNCTIONS
-        async function updateRealtimeMonitoring() {
-            try {
-                const response = await fetch('/api/v2/monitoring/realtime');
-                const data = await response.json();
-                
-                if (data.status === 'success' && data.metrics) {
-                    const metrics = data.metrics;
-                    
-                    // Update realtime stats
-                    document.getElementById('realtime-cpu').textContent = 
-                        metrics.system?.cpu?.usage_percent?.toFixed(1) + '%' || '-';
-                    document.getElementById('realtime-mem').textContent = 
-                        metrics.system?.memory?.virtual?.percent?.toFixed(1) + '%' || '-';
-                    
-                    // Update performance monitoring stats
-                    document.getElementById('perf-cpu-usage').textContent = 
-                        metrics.system?.cpu?.usage_percent?.toFixed(1) + '%' || '-';
-                    document.getElementById('perf-memory-usage').textContent = 
-                        metrics.system?.memory?.virtual?.percent?.toFixed(1) + '%' || '-';
-                    
-                    if (metrics.system?.disk_usage && metrics.system.disk_usage[0]) {
-                        document.getElementById('perf-disk-io').textContent = 
-                            metrics.system.disk_usage[0].percent?.toFixed(1) + '%' || '-';
-                    }
-                    
-                    if (metrics.system?.network) {
-                        const sent = (metrics.system.network.bytes_sent / 1024 / 1024).toFixed(1);
-                        const recv = (metrics.system.network.bytes_recv / 1024 / 1024).toFixed(1);
-                        document.getElementById('perf-network-io').textContent = `↑${sent}M ↓${recv}M`;
-                    }
-                    
-                    // Update top processes
-                    const topProcesses = document.getElementById('top-processes');
-                    if (topProcesses && metrics.top_processes) {
-                        topProcesses.innerHTML = '<div style="color: #0f0; font-size: 10px; margin-bottom: 5px;">TOP PROCESSES:</div>';
-                        for (const proc of metrics.top_processes.slice(0, 5)) {
-                            topProcesses.innerHTML += `
-                                <div class="log-entry" style="font-size: 9px;">
-                                    <span style="color: #0f0;">[${proc.pid}]</span>
-                                    ${proc.name.substring(0, 20).padEnd(20, '.')}
-                                    CPU: ${proc.cpu_percent?.toFixed(1)}%
-                                    MEM: ${proc.memory_percent?.toFixed(1)}%
-                                </div>
-                            `;
-                        }
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to update realtime monitoring:', error);
-            }
-        }
-        
-        // Start realtime monitoring updates
-        function startRealtimeMonitoring() {
-            if (document.getElementById('auto-refresh-realtime').checked) {
-                updateRealtimeMonitoring();
-                if (realtimeInterval) clearInterval(realtimeInterval);
-                realtimeInterval = setInterval(updateRealtimeMonitoring, 5000);
-            } else {
-                if (realtimeInterval) {
-                    clearInterval(realtimeInterval);
-                    realtimeInterval = null;
-                }
-            }
-        }
-        
-        // Initialize realtime monitoring on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            // Start realtime monitoring
-            startRealtimeMonitoring();
-            
-            // Update analytics on load
-            updateAnalytics();
-            
-            // Refresh enhanced features
-            refreshBackups();
-            getDatabaseStats();
-            refreshAlerts();
-            
-            // Set up auto-refresh checkbox listener
-            document.getElementById('auto-refresh-realtime').addEventListener('change', startRealtimeMonitoring);
-        });
-
     </script>
 </body>
 </html>
