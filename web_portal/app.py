@@ -606,30 +606,67 @@ def api_status():
 @app.route('/api/changelogs')
 @auth.login_required
 def api_changelogs():
-    """Get changelogs"""
+    """Get changelogs and Claude outputs"""
     limit = request.args.get('limit', 20, type=int)
-    changelogs = []
+    all_files = []
     
+    # Get changelog files
     if CHANGELOGS_DIR.exists():
-        changelog_files = sorted(CHANGELOGS_DIR.glob('*.md'), key=lambda x: x.stat().st_mtime, reverse=True)[:limit]
-        
+        changelog_files = list(CHANGELOGS_DIR.glob('*.md'))
         for changelog_file in changelog_files:
-            name_parts = changelog_file.stem.split('_')
-            work_area = name_parts[0] if name_parts else 'unknown'
-            
-            with open(changelog_file, 'r') as f:
-                lines = f.readlines()[:10]
-                summary = ''.join(lines[:3]) if lines else 'No content'
-            
-            changelogs.append({
-                'filename': changelog_file.name,
-                'work_area': work_area,
-                'timestamp': datetime.fromtimestamp(changelog_file.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
-                'size': f"{changelog_file.stat().st_size / 1024:.1f} KB",
-                'summary': sanitize_sensitive_info(summary)
+            all_files.append({
+                'path': changelog_file,
+                'type': 'changelog',
+                'mtime': changelog_file.stat().st_mtime
             })
     
-    return jsonify(changelogs)
+    # Get Claude output files from logs directory
+    if LOGS_DIR.exists():
+        claude_files = list(LOGS_DIR.glob('claude_*.log'))
+        for claude_file in claude_files:
+            all_files.append({
+                'path': claude_file,
+                'type': 'claude_output',
+                'mtime': claude_file.stat().st_mtime
+            })
+    
+    # Sort all files by modification time (newest first)
+    all_files.sort(key=lambda x: x['mtime'], reverse=True)
+    
+    # Process and return the most recent files
+    result = []
+    for file_info in all_files[:limit]:
+        file_path = file_info['path']
+        name_parts = file_path.stem.split('_')
+        
+        # Determine work area from filename
+        if file_info['type'] == 'claude_output':
+            # claude_<area>_<timestamp>.log format
+            work_area = name_parts[1] if len(name_parts) > 1 else 'unknown'
+            file_type = 'Claude Output'
+        else:
+            # changelog format
+            work_area = name_parts[0] if name_parts else 'unknown'
+            file_type = 'Changelog'
+        
+        # Get file preview
+        try:
+            with open(file_path, 'r') as f:
+                lines = f.readlines()[:5]
+                summary = ''.join(lines[:3]) if lines else 'No content'
+        except:
+            summary = 'Unable to read file'
+        
+        result.append({
+            'filename': file_path.name,
+            'work_area': work_area,
+            'type': file_type,
+            'timestamp': datetime.fromtimestamp(file_path.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S'),
+            'size': f"{file_path.stat().st_size / 1024:.1f} KB",
+            'summary': sanitize_sensitive_info(summary[:200])  # Limit summary length
+        })
+    
+    return jsonify(result)
 
 @app.route('/api/security')
 @auth.login_required
@@ -701,6 +738,7 @@ def api_log_content(filename):
                     content = content[:1024 * 1024] + "\n\n... [TRUNCATED - File too large] ..."
                 
                 return jsonify({
+                    'success': True,
                     'filename': filename,
                     'content': sanitize_sensitive_info(content),
                     'size': f"{len(content) / 1024:.1f} KB"

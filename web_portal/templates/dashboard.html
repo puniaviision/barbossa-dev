@@ -820,10 +820,14 @@
                 logsList.innerHTML = '';
                 changelogs.slice(0, 10).forEach(log => {
                     const filename = log.filename || log;
+                    const fileType = log.type || '';
                     const item = document.createElement('div');
-                    item.className = 'text-[10px] text-terminal-dim hover:text-terminal cursor-pointer';
-                    item.textContent = `▸ ${filename}`;
-                    item.onclick = () => viewLog(filename);
+                    item.className = 'text-[10px] text-terminal-dim hover:text-terminal cursor-pointer flex justify-between';
+                    const typeClass = fileType === 'Claude Output' ? 'text-yellow-500' : 'text-terminal-dim';
+                    item.innerHTML = `
+                        <span onclick="viewLog('${filename}')" class="flex-1">▸ ${filename}</span>
+                        <span class="${typeClass} text-[9px] ml-2">[${fileType}]</span>
+                    `;
                     logsList.appendChild(item);
                 });
             }
