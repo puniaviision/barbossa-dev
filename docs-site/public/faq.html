@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FAQ</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ink: #1a1a1a;
+            --paper: #fafafa;
+            --ghost: #999;
+            --line: #e5e5e5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ink: #e5e5e5;
+                --paper: #111;
+                --ghost: #666;
+                --line: #333;
+            }
+        }
+
+        body {
+            font: 16px/1.7 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+            background: var(--paper);
+            color: var(--ink);
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        /* Navigation - just links */
+        nav {
+            margin-bottom: 4rem;
+            font-size: 14px;
+        }
+        nav a {
+            color: var(--ghost);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+        nav a:hover {
+            color: var(--ink);
+        }
+        nav .logo {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 14px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 3rem 0 1.5rem;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--ghost);
+            margin: 2rem 0 1rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+        }
+
+        a {
+            color: var(--ink);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 0 0 1.5rem 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Code */
+        code {
+            font-family: inherit;
+            background: var(--line);
+            padding: 0.1em 0.3em;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--line);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem 0.75rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+        th {
+            font-weight: 600;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 2px solid var(--line);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: var(--ghost);
+        }
+
+        /* Horizontal rules */
+        hr {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 3rem 0;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 6rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--ghost);
+        }
+
+        /* Hero for home page */
+        .hero {
+            margin: 4rem 0;
+        }
+        .hero h1 {
+            font-size: 14px;
+            border: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        /* Features grid */
+        .features {
+            display: grid;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .feature {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--line);
+        }
+        .feature h3 {
+            margin: 0 0 0.5rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .feature p {
+            margin: 0;
+            color: var(--ghost);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">_b</a>
+        <a href="/quickstart.html">start</a>
+        <a href="/configuration.html">config</a>
+        <a href="/agents.html">agents</a>
+        <a href="/faq.html">faq</a>
+        <a href="https://github.com/ADWilkinson/barbossa-dev">github</a>
+    </nav>
+
+    <main>
+        <h1>FAQ</h1>
+
+<h3>What is Barbossa?</h3>
+
+<p>AI agents that work on your code while you sleep. They find issues, implement fixes, create PRs, and review each other's work.</p>
+
+<h3>Is it free?</h3>
+
+<p>Yes. You need a Claude Max subscription from Anthropic.</p>
+
+<h3>Will it break my code?</h3>
+
+<p>By default, approved PRs are merged automatically. Set <code>auto_merge: false</code> in config if you want to review and merge manually.</p>
+
+<h3>Can I trust it with private repos?</h3>
+
+<p>Code stays on your machine and GitHub. Claude sees code for analysis (same as using Claude directly).</p>
+
+<h3>What if it creates a bad PR?</h3>
+
+<p>Close it. Barbossa moves on.</p>
+
+<h3>Can I pause it?</h3>
+
+<pre><code>docker compose stop    # Pause
+docker compose start   # Resume</code></pre>
+
+<h3>How do I improve quality?</h3>
+
+<p>Add a <code>CLAUDE.md</code> to your repo with project context.</p>
+
+<h3>Claude auth fails?</h3>
+
+<pre><code>claude login
+docker compose restart</code></pre>
+
+<h3>GitHub permission denied?</h3>
+
+<pre><code>gh auth login
+docker compose restart</code></pre>
+
+<h3>No PRs being created?</h3>
+
+<ol>
+<li>Check for issues with <code>backlog</code> label</li>
+<li>Run manually: <code>docker exec barbossa barbossa run engineer</code></li>
+<li>Check logs: <code>docker exec barbossa barbossa logs engineer</code></li>
+</ul>
+
+    </main>
+
+    <footer>
+        MIT License · <a href="https://github.com/ADWilkinson/barbossa-dev">Source</a>
+    </footer>
+</body>
+</html>

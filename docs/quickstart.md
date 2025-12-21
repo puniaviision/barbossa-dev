@@ -1,0 +1,67 @@
+# Quick Start
+
+Get Barbossa running in 5 minutes.
+
+---
+
+## Requirements
+
+- **Docker** - [Install](https://docs.docker.com/get-docker/)
+- **Claude Max** - [Subscribe](https://claude.ai) (required for Claude Code CLI)
+- **GitHub CLI** - [Install](https://cli.github.com/)
+- **macOS or Linux** - Windows via WSL2
+
+---
+
+## Setup
+
+```bash
+# 1. Authenticate
+gh auth login
+claude login
+
+# 2. Run install script
+curl -fsSL https://raw.githubusercontent.com/ADWilkinson/barbossa-dev/main/install.sh | bash
+
+# 3. Start
+cd barbossa && docker compose up -d
+
+# 4. Verify
+docker exec barbossa barbossa health
+```
+
+The script prompts for your GitHub username and repository, then creates everything for you.
+
+To add more repositories later, edit `config/repositories.json`. See [Configuration](configuration.html) for all options.
+
+**Tip:** Use Claude to help configure! Give it [llms.txt](https://github.com/ADWilkinson/barbossa-dev/blob/main/llms.txt) for context.
+
+---
+
+## Commands
+
+```bash
+docker exec barbossa barbossa health          # Check status
+docker exec barbossa barbossa run engineer    # Run now
+docker exec barbossa barbossa status          # Activity
+docker compose logs -f                        # Logs
+```
+
+---
+
+## What Happens Next
+
+Barbossa runs automatically:
+- **Discovery** finds issues and adds them to backlog
+- **Engineer** picks from backlog and creates PRs
+- **Tech Lead** reviews PRs and merges good ones
+
+You wake up to PRs already merged. Set `auto_merge: false` in config if you prefer to merge manually.
+
+---
+
+## Next Steps
+
+- [Configuration](configuration.html) - All config options
+- [Agents](agents.html) - How agents work
+- [Troubleshooting](troubleshooting.html) - Common issues

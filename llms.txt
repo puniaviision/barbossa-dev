@@ -1,0 +1,102 @@
+# Barbossa
+
+> AI engineers that ship code while you sleep.
+
+Barbossa is an autonomous development pipeline with five AI agents that work on your codebase 24/7.
+
+## Requirements
+
+- Docker
+- Claude Max subscription (provides Claude Code CLI)
+- GitHub CLI (`gh auth login`)
+
+## Setup
+
+```bash
+# 1. Authenticate
+gh auth login
+claude login
+
+# 2. Run install script
+curl -fsSL https://raw.githubusercontent.com/ADWilkinson/barbossa-dev/main/install.sh | bash
+
+# 3. Start
+cd barbossa && docker compose up -d
+
+# 4. Verify
+docker exec barbossa barbossa health
+```
+
+The script prompts for your GitHub username and repository, then creates everything.
+
+To add more repositories later, edit `config/repositories.json`.
+
+## Configuration
+
+Minimal config (`config/repositories.json`):
+
+```json
+{
+  "owner": "your-github-username",
+  "repositories": [
+    {
+      "name": "my-app",
+      "url": "https://github.com/your-github-username/my-app.git"
+    }
+  ]
+}
+```
+
+With options:
+
+```json
+{
+  "owner": "your-github-username",
+  "repositories": [
+    {
+      "name": "my-app",
+      "url": "https://github.com/your-github-username/my-app.git",
+      "package_manager": "pnpm",
+      "do_not_touch": ["src/lib/auth.ts", "prisma/migrations/"]
+    }
+  ],
+  "settings": {
+    "telemetry": true,
+    "tech_lead": { "auto_merge": true }
+  }
+}
+```
+
+| Field | Description |
+|-------|-------------|
+| `package_manager` | `npm`, `yarn`, `pnpm`, or `bun` (auto-detected) |
+| `do_not_touch` | Files/directories agents should never modify |
+| `auto_merge` | `true` = auto-merge PRs, `false` = manual review |
+
+## Commands
+
+```bash
+docker exec barbossa barbossa health          # Check status
+docker exec barbossa barbossa run engineer    # Run engineer now
+docker exec barbossa barbossa status          # View activity
+docker compose logs -f                        # View logs
+```
+
+## Troubleshooting
+
+### Claude auth fails
+```bash
+claude login
+docker compose restart
+```
+
+### GitHub permission denied
+```bash
+gh auth login
+docker compose restart
+```
+
+## Links
+
+- Docs: https://barbossa.dev
+- GitHub: https://github.com/ADWilkinson/barbossa-dev

@@ -1,0 +1,78 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.env
+
+# Logs
+logs/
+*.log
+
+# Runtime data files (contain personal PR history)
+sessions.json
+tech_lead_decisions.json
+audit_history.json
+system_insights.json
+pending_feedback.json
+pr_history.json
+
+# Local config (user-specific)
+barbossa.json
+config/repositories.json
+
+# Security
+security/audit.log
+security/security_violations.log
+
+# Work tracking
+work_tracking/work_tally.json
+work_tracking/current_work.json
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Credentials
+config/credentials.json
+*.key
+*.pem
+*.crt
+
+# Temporary files
+*.tmp
+*.bak
+*.backup
+
+# Node modules (if any)
+node_modules/
+
+# Projects folder - managed by bot, not committed
+projects/
+
+# Database files
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
+metrics.db*
+test_*.db*
+
+# Temporary prompts
+temp_prompt.txt
+
+# Changelog files
+changelogs/*.md
+changelogs/*.txt
+config/firebase-service-account.json
+.firebase/

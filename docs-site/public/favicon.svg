@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32">
+  <style>
+    text { font-family: monospace; font-size: 20px; fill: #1a1a1a; }
+    @media (prefers-color-scheme: dark) {
+      text { fill: #e5e5e5; }
+    }
+  </style>
+  <text x="2" y="22">_b</text>
+</svg>

@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quick Start</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ink: #1a1a1a;
+            --paper: #fafafa;
+            --ghost: #999;
+            --line: #e5e5e5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ink: #e5e5e5;
+                --paper: #111;
+                --ghost: #666;
+                --line: #333;
+            }
+        }
+
+        body {
+            font: 16px/1.7 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+            background: var(--paper);
+            color: var(--ink);
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        /* Navigation - just links */
+        nav {
+            margin-bottom: 4rem;
+            font-size: 14px;
+        }
+        nav a {
+            color: var(--ghost);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+        nav a:hover {
+            color: var(--ink);
+        }
+        nav .logo {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 14px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 3rem 0 1.5rem;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--ghost);
+            margin: 2rem 0 1rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+        }
+
+        a {
+            color: var(--ink);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 0 0 1.5rem 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Code */
+        code {
+            font-family: inherit;
+            background: var(--line);
+            padding: 0.1em 0.3em;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--line);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem 0.75rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+        th {
+            font-weight: 600;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 2px solid var(--line);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: var(--ghost);
+        }
+
+        /* Horizontal rules */
+        hr {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 3rem 0;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 6rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--ghost);
+        }
+
+        /* Hero for home page */
+        .hero {
+            margin: 4rem 0;
+        }
+        .hero h1 {
+            font-size: 14px;
+            border: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        /* Features grid */
+        .features {
+            display: grid;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .feature {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--line);
+        }
+        .feature h3 {
+            margin: 0 0 0.5rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .feature p {
+            margin: 0;
+            color: var(--ghost);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">_b</a>
+        <a href="/quickstart.html">start</a>
+        <a href="/configuration.html">config</a>
+        <a href="/agents.html">agents</a>
+        <a href="/faq.html">faq</a>
+        <a href="https://github.com/ADWilkinson/barbossa-dev">github</a>
+    </nav>
+
+    <main>
+        <h1>Quick Start</h1>
+
+<p>Get Barbossa running in 5 minutes.</p>
+
+<hr>
+
+<h2>Requirements</h2>
+
+<ul>
+<li><strong>Docker</strong> - <a href="https://docs.docker.com/get-docker/">Install</a></li>
+<li><strong>Claude Max</strong> - <a href="https://claude.ai">Subscribe</a> (required for Claude Code CLI)</li>
+<li><strong>GitHub CLI</strong> - <a href="https://cli.github.com/">Install</a></li>
+<li><strong>macOS or Linux</strong> - Windows via WSL2</li>
+</ul>
+
+<hr>
+
+<h2>Setup</h2>
+
+<pre><code># 1. Authenticate
+gh auth login
+claude login
+
+# 2. Clone and configure
+git clone https://github.com/ADWilkinson/barbossa-dev.git
+cd barbossa-dev
+cp config/repositories.json.example config/repositories.json
+
+# 3. Edit config with your repository
+nano config/repositories.json
+
+# 4. Start
+docker compose up -d
+
+# 5. Verify
+docker exec barbossa barbossa health</code></pre>
+
+<strong>Tip:</strong> Use Claude to help configure! Give it <a href="https://github.com/ADWilkinson/barbossa-dev/blob/main/llms.txt">llms.txt</a> for context.
+
+<hr>
+
+<h2>Commands</h2>
+
+<pre><code>docker exec barbossa barbossa health          # Check status
+docker exec barbossa barbossa run engineer    # Run now
+docker exec barbossa barbossa status          # Activity
+docker compose logs -f                        # Logs</code></pre>
+
+<hr>
+
+<h2>What Happens Next</h2>
+
+<p>Barbossa runs automatically:</p>
+<ul>
+<li><strong>Discovery</strong> finds issues and adds them to backlog</li>
+<li><strong>Engineer</strong> picks from backlog and creates PRs</li>
+<li><strong>Tech Lead</strong> reviews PRs and merges good ones</li>
+</ul>
+
+<p>You wake up to PRs already merged. Set <code>auto_merge: false</code> in config if you prefer to merge manually.</p>
+
+<hr>
+
+<h2>Next Steps</h2>
+
+<ul>
+<li><a href="configuration.html">Configuration</a> - All config options</li>
+<li><a href="agents.html">Agents</a> - How agents work</li>
+<li><a href="troubleshooting.html">Troubleshooting</a> - Common issues</li>
+</ul>
+
+    </main>
+
+    <footer>
+        MIT License · <a href="https://github.com/ADWilkinson/barbossa-dev">Source</a>
+    </footer>
+</body>
+</html>

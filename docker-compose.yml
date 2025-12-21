@@ -1,0 +1,25 @@
+services:
+  barbossa:
+    build: .
+    container_name: barbossa
+    restart: unless-stopped
+    volumes:
+      # Persist logs and output
+      - ./logs:/app/logs
+      - ./changelogs:/app/changelogs
+      - ./projects:/app/projects
+      # Git config for commits
+      - ~/.gitconfig:/root/.gitconfig
+      # GitHub CLI auth (required)
+      - ~/.config/gh:/root/.config/gh:ro
+      # SSH keys (optional - only needed if using git@github.com URLs)
+      # - ~/.ssh:/root/.ssh:ro
+      # Claude config (writable for token refresh)
+      - ~/.claude:/root/.claude
+    environment:
+      - GITHUB_TOKEN=${GITHUB_TOKEN}
+      - TZ=${TZ:-UTC}
+      # Google Analytics 4 (optional - get API secret from GA4 admin)
+      - GA4_API_SECRET=${GA4_API_SECRET:-}
+      # Set to 'true' to disable analytics
+      - BARBOSSA_ANALYTICS_OPT_OUT=${BARBOSSA_ANALYTICS_OPT_OUT:-false}

@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agents</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --ink: #1a1a1a;
+            --paper: #fafafa;
+            --ghost: #999;
+            --line: #e5e5e5;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --ink: #e5e5e5;
+                --paper: #111;
+                --ghost: #666;
+                --line: #333;
+            }
+        }
+
+        body {
+            font: 16px/1.7 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+            background: var(--paper);
+            color: var(--ink);
+            max-width: 680px;
+            margin: 0 auto;
+            padding: 4rem 2rem;
+        }
+
+        /* Navigation - just links */
+        nav {
+            margin-bottom: 4rem;
+            font-size: 14px;
+        }
+        nav a {
+            color: var(--ghost);
+            text-decoration: none;
+            margin-right: 1.5rem;
+        }
+        nav a:hover {
+            color: var(--ink);
+        }
+        nav .logo {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            vertical-align: middle;
+            margin-right: 0.25rem;
+        }
+
+        /* Typography */
+        h1 {
+            font-size: 14px;
+            font-weight: 400;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-bottom: 3rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--line);
+        }
+
+        h2 {
+            font-size: 14px;
+            font-weight: 600;
+            margin: 3rem 0 1.5rem;
+        }
+
+        h3 {
+            font-size: 14px;
+            font-weight: 400;
+            color: var(--ghost);
+            margin: 2rem 0 1rem;
+        }
+
+        p {
+            margin-bottom: 1.5rem;
+        }
+
+        a {
+            color: var(--ink);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+
+        /* Lists */
+        ul, ol {
+            margin: 0 0 1.5rem 1.5rem;
+        }
+        li {
+            margin-bottom: 0.5rem;
+        }
+
+        /* Code */
+        code {
+            font-family: inherit;
+            background: var(--line);
+            padding: 0.1em 0.3em;
+            font-size: 0.9em;
+        }
+
+        pre {
+            background: var(--line);
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            overflow-x: auto;
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: none;
+            padding: 0;
+        }
+
+        /* Tables */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1.5rem 0;
+            font-size: 14px;
+        }
+        th, td {
+            text-align: left;
+            padding: 0.75rem 1rem 0.75rem 0;
+            border-bottom: 1px solid var(--line);
+        }
+        th {
+            font-weight: 600;
+        }
+
+        /* Blockquotes */
+        blockquote {
+            border-left: 2px solid var(--line);
+            padding-left: 1rem;
+            margin: 1.5rem 0;
+            color: var(--ghost);
+        }
+
+        /* Horizontal rules */
+        hr {
+            border: none;
+            border-top: 1px solid var(--line);
+            margin: 3rem 0;
+        }
+
+        /* Footer */
+        footer {
+            margin-top: 6rem;
+            padding-top: 2rem;
+            border-top: 1px solid var(--line);
+            font-size: 13px;
+            color: var(--ghost);
+        }
+
+        /* Hero for home page */
+        .hero {
+            margin: 4rem 0;
+        }
+        .hero h1 {
+            font-size: 14px;
+            border: none;
+            padding: 0;
+            margin-bottom: 1rem;
+        }
+        .hero p {
+            font-size: 24px;
+            font-weight: 300;
+            line-height: 1.4;
+            margin-bottom: 0;
+        }
+
+        /* Features grid */
+        .features {
+            display: grid;
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        .feature {
+            padding: 1.5rem 0;
+            border-top: 1px solid var(--line);
+        }
+        .feature h3 {
+            margin: 0 0 0.5rem;
+            font-weight: 600;
+            color: var(--ink);
+        }
+        .feature p {
+            margin: 0;
+            color: var(--ghost);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <a href="/">_b</a>
+        <a href="/quickstart.html">start</a>
+        <a href="/configuration.html">config</a>
+        <a href="/agents.html">agents</a>
+        <a href="/faq.html">faq</a>
+        <a href="https://github.com/ADWilkinson/barbossa-dev">github</a>
+    </nav>
+
+    <main>
+        <h1>Agents</h1>
+
+<p>Five autonomous agents work on your codebase.</p>
+
+<hr>
+
+<h2>Overview</h2>
+
+<table><tr><th>Agent</th><th>Purpose</th></tr><tr><td><strong>Engineer</strong></td><td>Picks tasks from backlog, creates PRs</td></tr><tr><td><strong>Tech Lead</strong></td><td>Reviews PRs, merges or requests changes</td></tr><tr><td><strong>Discovery</strong></td><td>Finds TODOs, missing tests, issues</td></tr><tr><td><strong>Product Manager</strong></td><td>Proposes high-value features</td></tr><tr><td><strong>Auditor</strong></td><td>Monitors system health</td></tr></table>
+<hr>
+
+<h2>Pipeline</h2>
+
+<pre><code>Discovery + Product Manager
+           ↓
+     GitHub Issues (backlog)
+           ↓
+        Engineer → Pull Request
+           ↓
+       Tech Lead → Merge/Reject</code></pre>
+
+<hr>
+
+<h2>How Each Agent Works</h2>
+
+<h3>Engineer</h3>
+<p>Picks tasks from the GitHub Issues backlog and implements them.</p>
+<ul>
+<li>Finds issues labeled <code>backlog</code></li>
+<li>Implements the fix/feature</li>
+<li>Creates a pull request</li>
+<li>Links PR to issue with <code>Closes #XX</code></li>
+</ul>
+
+<h3>Tech Lead</h3>
+<p>Reviews pull requests and decides whether to merge or request changes.</p>
+<ul>
+<li>Checks CI status (must pass)</li>
+<li>Reviews code quality</li>
+<li>Merges good PRs automatically (default behavior)</li>
+<li>Requests changes on weak PRs</li>
+<li>Set <code>auto_merge: false</code> in config to require manual merges</li>
+</ul>
+
+<h3>Discovery</h3>
+<p>Scans the codebase for technical debt and creates GitHub Issues.</p>
+<ul>
+<li>TODO and FIXME comments</li>
+<li>Missing tests</li>
+<li>Accessibility issues</li>
+</ul>
+
+<h3>Product Manager</h3>
+<p>Analyzes the codebase and proposes high-value features.</p>
+<ul>
+<li>Reads CLAUDE.md to understand the product</li>
+<li>Creates feature issues with acceptance criteria</li>
+</ul>
+
+<h3>Auditor</h3>
+<p>Monitors system health and identifies patterns.</p>
+<ul>
+<li>Analyzes agent logs</li>
+<li>Tracks PR outcomes</li>
+</ul>
+
+<hr>
+
+<h2>Run Manually</h2>
+
+<pre><code>docker exec barbossa barbossa run engineer
+docker exec barbossa barbossa run tech-lead
+docker exec barbossa barbossa run discovery</code></pre>
+
+    </main>
+
+    <footer>
+        MIT License · <a href="https://github.com/ADWilkinson/barbossa-dev">Source</a>
+    </footer>
+</body>
+</html>
