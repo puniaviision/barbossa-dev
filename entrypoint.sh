@@ -43,21 +43,16 @@ echo ""
 # ========================================
 
 echo "Generating schedule from config..."
-python3 /app/generate_crontab.py > /tmp/barbossa-crontab
-crontab /tmp/barbossa-crontab
-rm /tmp/barbossa-crontab
-
-# Export environment for cron jobs
-printenv | grep -E '^(ANTHROPIC|GITHUB|PATH|HOME|TZ)' >> /etc/environment 2>/dev/null || true
-
-# Start cron daemon
-echo "Starting scheduler..."
-cron
-
+python3 /app/generate_crontab.py > /app/crontab
 echo ""
+
 echo "Active schedule:"
-crontab -l 2>/dev/null | grep -v "^#" | grep -v "^$" | grep -v "^SHELL" | grep -v "^PATH" | head -6
+cat /app/crontab | grep -v "^#" | grep -v "^$" | grep -v "^SHELL" | grep -v "^PATH" | head -6
 echo ""
+
+# Start supercronic in background
+echo "Starting scheduler..."
+supercronic /app/crontab &
 
 echo "========================================"
 echo "  Barbossa is running!"
