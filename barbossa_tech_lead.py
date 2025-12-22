@@ -550,6 +550,18 @@ class BarbossaTechLead:
 ---
 _Senior Engineer: Please address the above feedback and push updates._"""
 
+                # Check if we already posted a similar comment to avoid spam
+                try:
+                    existing_comments = self._get_pr_comments(repo_name, pr_number)
+                    for existing in existing_comments[-5:]:  # Check last 5 comments
+                        existing_body = existing.get('body', '')
+                        # If we already posted a REQUEST_CHANGES comment with same reasoning, skip
+                        if '**Tech Lead Review - Changes Requested**' in existing_body and feedback[:100] in existing_body:
+                            self.logger.info(f"Skipping duplicate comment on PR #{pr_number} - already posted similar feedback")
+                            return True  # Consider this a success - no need to spam
+                except Exception as e:
+                    self.logger.warning(f"Could not check for duplicate comments: {e}")
+
                 import tempfile
                 with tempfile.NamedTemporaryFile(mode='w', suffix='.md', delete=False) as f:
                     f.write(comment_body)
@@ -647,7 +659,7 @@ _Senior Engineer: Please address the above feedback and push updates._"""
 
         self.logger.info(f"Invoking Claude for review (with {len(comments)} comments for context)...")
 
-        cmd = f"cat {prompt_file} | claude --dangerously-skip-permissions -p --model opus > {output_file} 2>&1"
+        cmd = f"cat {prompt_file} | claude -p --model opus > {output_file} 2>&1"
 
         try:
             result = subprocess.run(
