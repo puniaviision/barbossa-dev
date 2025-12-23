@@ -119,8 +119,8 @@ def validate_claude():
     ]
 
     for creds_file in creds_paths:
-        if creds_file.exists():
-            try:
+        try:
+            if creds_file.exists():
                 with open(creds_file) as f:
                     creds = json.load(f)
 
@@ -145,8 +145,12 @@ def validate_claude():
                     else:
                         ok(f"Claude CLI authenticated (valid for {hours_left:.0f}h)")
                         return True
-            except Exception as e:
-                pass
+        except PermissionError:
+            # Skip paths we can't access (e.g., /root when running as non-root)
+            continue
+        except Exception as e:
+            # Skip invalid credential files
+            pass
 
     err("Claude CLI not authenticated")
     print("  Run: claude login")
