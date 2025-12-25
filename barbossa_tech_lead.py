@@ -40,7 +40,7 @@ class BarbossaTechLead:
     Uses GitHub as the single source of truth - no file-based state.
     """
 
-    VERSION = "1.0.9"
+    VERSION = "1.1.0"
     ROLE = "tech_lead"
 
     # Default review criteria (can be overridden in config)
@@ -568,18 +568,26 @@ _Senior Engineer: Please address the above feedback and push updates._"""
                     temp_file = f.name
 
                 try:
-                    cmd = f'gh pr comment {pr_number} --repo {self.owner}/{repo_name} --body-file "{temp_file}"'
-                    result = subprocess.run(cmd, shell=True, capture_output=True, text=True, timeout=60)
-                    success = result.returncode == 0
-                    if not success:
-                        # Suppress expected "can't review own PR" errors (GitHub API limitation)
-                        if "Can not request changes on your own pull request" in result.stderr:
-                            self.logger.info(f"Posted comment on PR #{pr_number} (GitHub doesn't allow formal review on own PRs)")
-                            success = True  # Treat as success - comment was posted
+                    # FIRST: Try to use formal GitHub review (sets reviewDecision field)
+                    review_cmd = f'gh pr review {pr_number} --repo {self.owner}/{repo_name} --request-changes --body-file "{temp_file}"'
+                    result = subprocess.run(review_cmd, shell=True, capture_output=True, text=True, timeout=60)
+
+                    if result.returncode == 0:
+                        self.logger.info(f"Posted formal review REQUEST_CHANGES on PR #{pr_number}")
+                        success = True
+                    elif "Can not request changes on your own pull request" in result.stderr or "own pull request" in result.stderr:
+                        # FALLBACK: GitHub doesn't allow reviewing your own PR - use comment instead
+                        self.logger.info(f"GitHub doesn't allow formal review on own PR - posting comment instead")
+                        comment_cmd = f'gh pr comment {pr_number} --repo {self.owner}/{repo_name} --body-file "{temp_file}"'
+                        result = subprocess.run(comment_cmd, shell=True, capture_output=True, text=True, timeout=60)
+                        success = result.returncode == 0
+                        if success:
+                            self.logger.info(f"Posted feedback comment on PR #{pr_number}")
                         else:
                             self.logger.error(f"Comment failed: {result.stderr}")
                     else:
-                        self.logger.info(f"Posted feedback comment on PR #{pr_number}")
+                        self.logger.error(f"Review failed: {result.stderr}")
+                        success = False
                 finally:
                     try:
                         os.unlink(temp_file)

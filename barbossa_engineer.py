@@ -40,7 +40,7 @@ class Barbossa:
     Uses GitHub as the single source of truth - no file-based state.
     """
 
-    VERSION = "1.0.2"
+    VERSION = "1.1.0"
 
     def __init__(self, work_dir: Optional[Path] = None):
         # Support Docker (/app) and local paths
@@ -483,51 +483,73 @@ See: {output_file}
             # Fetch comments to understand conversation context
             comments = self._get_pr_comments(repo_name, pr_number)
 
-            # Look for Tech Lead feedback in comments
+            # PRIORITY 1: Look for Tech Lead feedback in comments (most important)
             has_tech_lead_feedback = False
+            latest_tech_lead_feedback = None
+            latest_tech_lead_timestamp = None
             feedback_addressed = False
-            tech_lead_feedback = ""
 
             for comment in comments:
                 body = comment.get('body', '')
                 author = comment.get('author', {}).get('login', '')
+                created_at = comment.get('createdAt', '')
 
-                # Check for Tech Lead feedback
-                if 'Tech Lead Review' in body and 'Changes Requested' in body:
+                # Check for Tech Lead feedback marker
+                if '**Tech Lead Review - Changes Requested**' in body:
                     has_tech_lead_feedback = True
-                    # Extract the feedback
-                    if '**Feedback:**' in body:
-                        tech_lead_feedback = body.split('**Feedback:**')[1].split('---')[0].strip()
+                    # Track the LATEST Tech Lead feedback
+                    if not latest_tech_lead_timestamp or created_at > latest_tech_lead_timestamp:
+                        latest_tech_lead_timestamp = created_at
+                        # Extract the feedback section
+                        if '**Feedback:**' in body:
+                            latest_tech_lead_feedback = body.split('**Feedback:**')[1].split('---')[0].strip()
+                        else:
+                            latest_tech_lead_feedback = body
 
-                # Check if there's a response after Tech Lead feedback
-                if has_tech_lead_feedback and author == owner:
-                    # Owner responded, check if it seems like feedback was addressed
-                    if any(phrase in body.lower() for phrase in ['verification', 'fixed', 'addressed', 'updated', 'resolved']):
-                        feedback_addressed = True
+            # Check if feedback was addressed: look for Engineer updates AFTER latest Tech Lead comment
+            if has_tech_lead_feedback and latest_tech_lead_timestamp:
+                for comment in comments:
+                    created_at = comment.get('createdAt', '')
+                    author = comment.get('author', {}).get('login', '')
+                    body = comment.get('body', '')
 
-            # If Tech Lead gave feedback and it wasn't clearly addressed, needs attention
+                    # Look for Engineer/bot responses AFTER the latest Tech Lead feedback
+                    if created_at > latest_tech_lead_timestamp:
+                        # Engineer commented after Tech Lead - check if it's addressing feedback
+                        if 'Feedback Addressed' in body or 'feedback addressed' in body.lower():
+                            feedback_addressed = True
+                            break
+                        # Also check for automated "pushed" notifications which indicate work was done
+                        if author in ['github-actions[bot]', 'vercel[bot]'] and 'commit' in body.lower():
+                            feedback_addressed = True
+                            break
+
+            # If Tech Lead gave feedback and it wasn't addressed, THIS IS TOP PRIORITY
             if has_tech_lead_feedback and not feedback_addressed:
+                self.logger.info(f"  PR #{pr_number}: Tech Lead feedback detected (not addressed)")
                 pr['attention_reason'] = 'tech_lead_feedback'
-                pr['tech_lead_feedback'] = tech_lead_feedback[:500] if tech_lead_feedback else 'Please address Tech Lead feedback'
+                pr['tech_lead_feedback'] = latest_tech_lead_feedback[:500] if latest_tech_lead_feedback else 'Please address Tech Lead feedback'
                 pr['comments'] = comments
                 needs_attention.append(pr)
                 continue
 
-            # Check if PR has requested changes on GitHub
+            # PRIORITY 2: Check if PR has formal GitHub review decision
             if pr.get('reviewDecision') == 'CHANGES_REQUESTED':
+                self.logger.info(f"  PR #{pr_number}: GitHub review requests changes")
                 pr['attention_reason'] = 'changes_requested'
                 pr['comments'] = comments
                 needs_attention.append(pr)
                 continue
 
-            # Check if PR has merge conflicts
+            # PRIORITY 3: Check if PR has merge conflicts
             if pr.get('mergeable') == 'CONFLICTING' or pr.get('mergeStateStatus') == 'DIRTY':
+                self.logger.info(f"  PR #{pr_number}: Merge conflicts detected")
                 pr['attention_reason'] = 'merge_conflicts'
                 pr['comments'] = comments
                 needs_attention.append(pr)
                 continue
 
-            # Check if PR has failing checks
+            # PRIORITY 4: Check if PR has failing checks
             checks = pr.get('statusCheckRollup', [])
             has_failure = False
             for check in (checks or []):
@@ -538,6 +560,7 @@ See: {output_file}
                     break
 
             if has_failure:
+                self.logger.info(f"  PR #{pr_number}: Failing CI checks")
                 pr['attention_reason'] = 'failing_checks'
                 pr['comments'] = comments
                 needs_attention.append(pr)

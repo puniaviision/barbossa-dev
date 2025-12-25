@@ -1,7 +1,7 @@
 # Barbossa Engineer - Claude Context
 
 **Last Updated:** 2025-12-25
-**Version:** v1.0.9 (pending release)
+**Version:** v1.1.0
 
 ## Project Overview
 
@@ -56,7 +56,57 @@ barbossa-engineer/
 - ✅ Git Config: Andy Wilkinson <andywilkinson1993@gmail.com>
 - ⚠️ SSH Keys: Not configured (using HTTPS URLs)
 
-## Recent Enhancements (v1.0.9)
+## Recent Enhancements (v1.1.0)
+
+### CRITICAL FIX: Engineer Now Detects Tech Lead Feedback
+**Date:** 2025-12-25
+**Bug Fixed:** Engineer was failing to detect and address Tech Lead feedback, allowing PRs to accumulate 6-7 unaddressed reviews before finally being caught.
+
+**Problem:**
+- PR #112 received **7 identical Tech Lead reviews** over 13 hours (Dec 24 14:01 → Dec 25 02:01)
+- Each review flagged the same accessibility issues
+- Engineer logged "No PRs need attention - all clear!" at 14:00, 16:00, 18:00, 22:00, 00:00
+- PR was only caught at 02:00 when merge conflicts developed (detected as `merge_conflicts`, not `tech_lead_feedback`)
+- This wasted API costs, time, and violated the 3-strikes auto-close rule intent
+
+**Root Cause Analysis:**
+1. **Tech Lead posted comments, not GitHub reviews** → `reviewDecision` field stayed empty
+2. **Comment parsing logic bug** → Confused owner authorship (Tech Lead runs as owner ADWilkinson)
+3. **Detection ordering bug** → Merge conflicts checked before Tech Lead feedback
+4. **No detection logging** → Hard to debug why PRs weren't being flagged
+
+**Fixes Implemented:**
+
+**Engineer (`barbossa_engineer.py:473-568`):**
+- ✅ **Fixed comment detection logic**: Now tracks LATEST Tech Lead feedback by timestamp
+- ✅ **Smarter feedback-addressed detection**: Looks for "Feedback Addressed" comments AFTER Tech Lead review
+- ✅ **Priority ordering**: Tech Lead feedback is PRIORITY 1 (checked before merge conflicts)
+- ✅ **Added detection logging**: Now logs why each PR is/isn't flagged (`PR #X: Tech Lead feedback detected`)
+- ✅ **Removed owner authorship confusion**: No longer checks `author == owner` incorrectly
+
+**Tech Lead (`barbossa_tech_lead.py:537-596`):**
+- ✅ **Now uses `gh pr review --request-changes`** instead of `gh pr comment`
+- ✅ **Sets `reviewDecision` field** on GitHub (when not own PR)
+- ✅ **Graceful fallback**: If "own PR" error, falls back to comments
+- ✅ **Better logging**: Distinguishes between formal reviews and comment fallbacks
+
+**Impact:**
+- ✅ Engineer now catches Tech Lead feedback on FIRST review (not after 6-7 reviews)
+- ✅ Tech Lead feedback detected as `tech_lead_feedback` reason (not misclassified as `merge_conflicts`)
+- ✅ 3-strikes auto-close rule works as intended
+- ✅ Massive reduction in wasted API costs and review cycles
+- ✅ PRs get fixed faster instead of accumulating feedback
+
+**Testing:**
+- Fixed logic tested against PR #112 timeline
+- Would have caught feedback at 14:01 instead of waiting until 02:01 merge conflicts
+
+**Files Modified:**
+- `barbossa_engineer.py:473-568`: Complete rewrite of `_get_prs_needing_attention()`
+- `barbossa_tech_lead.py:537-596`: Updated `_execute_decision()` REQUEST_CHANGES handling
+- All agent versions bumped to v1.1.0
+
+## Previous Enhancements (v1.0.9)
 
 ### Tech Lead 3-Strikes Auto-Close Rule
 **Enhancement:** Tech Lead now automatically closes PRs that fail to meet quality standards after 3 review cycles.
@@ -257,7 +307,16 @@ On container startup, `validate.py` checks:
 
 ## Development History
 
-### v1.0.9 (pending) - 2025-12-25
+### v1.1.0 - 2025-12-25
+- **CRITICAL FIX**: Engineer now properly detects Tech Lead feedback
+- Fixed comment-based detection logic with timestamp tracking
+- Tech Lead now uses `gh pr review --request-changes` (sets reviewDecision field)
+- Tech Lead feedback is now PRIORITY 1 (checked before merge conflicts)
+- Added detection logging for better debugging
+- Prevents PRs from accumulating 6-7 unaddressed reviews
+- Massive reduction in wasted API costs
+
+### v1.0.9 - 2025-12-25
 - Tech Lead 3-strikes auto-close rule
 - PRs automatically closed after 3 REQUEST_CHANGES cycles
 - Prevents zombie PRs stuck in infinite review loops
@@ -293,10 +352,10 @@ On container startup, `validate.py` checks:
 
 ## Next Steps
 
-1. **Release v1.0.9** - Tag and release with 3-strikes auto-close rule
-2. **Monitor 3-Strikes Rule** - Verify zombie PRs get closed after 3 REQUEST_CHANGES
-3. **Monitor Tech Lead Reviews** - Verify deeper quality analysis in PR reviews
-4. **Monitor Auditor Reports** - Check for bloat and architecture warnings
+1. **Monitor v1.1.0 Fixes** - Verify Engineer catches Tech Lead feedback on first review
+2. **Monitor Tech Lead Review Method** - Check if using formal reviews or falling back to comments
+3. **Monitor 3-Strikes Rule** - Verify zombie PRs get closed after 3 REQUEST_CHANGES
+4. **Monitor Detection Logging** - Review logs to confirm proper PR flagging
 5. **SSH Keys (Optional)** - Mount ~/.ssh if switching to SSH URLs
 
 ## Troubleshooting

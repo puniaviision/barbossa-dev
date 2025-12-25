@@ -43,7 +43,7 @@ class BarbossaAuditor:
     and identifies opportunities for optimization.
     """
 
-    VERSION = "1.0.8"
+    VERSION = "1.1.0"
     ROLE = "auditor"
 
     def __init__(self, work_dir: Optional[Path] = None):
