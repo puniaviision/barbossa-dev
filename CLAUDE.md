@@ -1,7 +1,7 @@
 # Barbossa Engineer - Claude Context
 
-**Last Updated:** 2025-12-23
-**Version:** v1.0.7 (pending release)
+**Last Updated:** 2025-12-25
+**Version:** v1.0.9 (pending release)
 
 ## Project Overview
 
@@ -56,7 +56,39 @@ barbossa-engineer/
 - ✅ Git Config: Andy Wilkinson <andywilkinson1993@gmail.com>
 - ⚠️ SSH Keys: Not configured (using HTTPS URLs)
 
-## Recent Enhancements (v1.0.8)
+## Recent Enhancements (v1.0.9)
+
+### Tech Lead 3-Strikes Auto-Close Rule
+**Enhancement:** Tech Lead now automatically closes PRs that fail to meet quality standards after 3 review cycles.
+
+**Problem Solved:**
+- Previously, PRs could get stuck in infinite REQUEST_CHANGES loops
+- Engineer would repeatedly attempt fixes that failed review
+- Example: PR #112 had 6+ identical reviews for same accessibility issues
+- This wasted API costs, time, and blocked progress on other backlog items
+
+**Implementation:**
+- Before sending PR to Claude for review, Tech Lead checks comment history
+- Counts "**Tech Lead Review - Changes Requested**" comments
+- If count >= 3, automatically CLOSE the PR with clear explanation
+- Logs: "AUTO: Closing PR - 3-strikes rule triggered (N change requests)"
+
+**Impact:**
+- ✅ Stops wasted effort on unfixable or stalled PRs
+- ✅ Forces Engineer to try different approach (new PR from scratch)
+- ✅ Clears backlog faster - no zombie PRs
+- ✅ Still fair (3 chances is reasonable)
+- ✅ 5-day stale cleanup becomes backup, not primary mechanism
+
+**Files Modified:**
+- `barbossa_tech_lead.py:619-634`: Added 3-strikes check in `review_pr()` method
+- Version bumped to v1.0.9
+
+**Behavior:**
+- After 3 REQUEST_CHANGES comments → PR auto-closed
+- Message: "Unable to meet quality standards after N review cycles. Closing to prevent wasted effort. Start fresh with a new approach if this feature is still needed."
+
+## Previous Enhancements (v1.0.8)
 
 ### Enhanced Tech Lead & Auditor - Deep Quality Analysis
 **Enhancement:** Significantly upgraded both Tech Lead and Auditor agents to perform comprehensive quality checks beyond basic code review.
@@ -225,7 +257,13 @@ On container startup, `validate.py` checks:
 
 ## Development History
 
-### v1.0.8 (pending) - 2025-12-23
+### v1.0.9 (pending) - 2025-12-25
+- Tech Lead 3-strikes auto-close rule
+- PRs automatically closed after 3 REQUEST_CHANGES cycles
+- Prevents zombie PRs stuck in infinite review loops
+- Stops wasted API costs and engineering time
+
+### v1.0.8 - 2025-12-23
 - Enhanced Tech Lead with comprehensive 8-dimension quality review
 - Added code bloat detection to Auditor
 - Added architecture consistency analysis to Auditor
@@ -255,10 +293,11 @@ On container startup, `validate.py` checks:
 
 ## Next Steps
 
-1. **Release v1.0.8** - Tag and release with enhanced quality checks
-2. **Monitor Tech Lead Reviews** - Verify deeper quality analysis in PR reviews
-3. **Monitor Auditor Reports** - Check for bloat and architecture warnings
-4. **SSH Keys (Optional)** - Mount ~/.ssh if switching to SSH URLs
+1. **Release v1.0.9** - Tag and release with 3-strikes auto-close rule
+2. **Monitor 3-Strikes Rule** - Verify zombie PRs get closed after 3 REQUEST_CHANGES
+3. **Monitor Tech Lead Reviews** - Verify deeper quality analysis in PR reviews
+4. **Monitor Auditor Reports** - Check for bloat and architecture warnings
+5. **SSH Keys (Optional)** - Mount ~/.ssh if switching to SSH URLs
 
 ## Troubleshooting
 

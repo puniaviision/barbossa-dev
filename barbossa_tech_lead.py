@@ -40,7 +40,7 @@ class BarbossaTechLead:
     Uses GitHub as the single source of truth - no file-based state.
     """
 
-    VERSION = "1.0.8"
+    VERSION = "1.0.9"
     ROLE = "tech_lead"
 
     # Default review criteria (can be overridden in config)
@@ -616,7 +616,24 @@ _Senior Engineer: Please address the above feedback and push updates._"""
         # Quick rejection checks (before Claude review)
         quick_reject = None
 
-        if checks.get('any_failing'):
+        # Check for repeated REQUEST_CHANGES (3-strikes rule)
+        tech_lead_change_requests = [
+            c for c in comments
+            if '**Tech Lead Review - Changes Requested**' in c.get('body', '')
+        ]
+        if len(tech_lead_change_requests) >= 3:
+            quick_reject = {
+                'decision': 'CLOSE',
+                'reasoning': f'Unable to meet quality standards after {len(tech_lead_change_requests)} review cycles. Closing to prevent wasted effort. Start fresh with a new approach if this feature is still needed.',
+                'value_score': 0,
+                'quality_score': 0,
+                'bloat_risk': 'HIGH',
+                'auto_rejected': True,
+                'three_strikes': True
+            }
+            self.logger.info(f"AUTO: Closing PR - 3-strikes rule triggered ({len(tech_lead_change_requests)} change requests)")
+
+        if not quick_reject and checks.get('any_failing'):
             quick_reject = {
                 'decision': 'REQUEST_CHANGES',
                 'reasoning': 'CI checks are failing. Fix the failing checks before this PR can be reviewed.',
