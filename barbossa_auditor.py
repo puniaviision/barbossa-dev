@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Barbossa Auditor v1.0.8 - Self-Improving System Audit Agent
+Barbossa Auditor v1.2.0 - Self-Improving System Audit Agent
 Runs daily at 06:30 to analyze logs, PR outcomes, and system health.
 Identifies patterns, issues, and opportunities for improvement.
 Enhanced with code bloat detection and architecture consistency checks.
@@ -43,7 +43,7 @@ class BarbossaAuditor:
     and identifies opportunities for optimization.
     """
 
-    VERSION = "1.1.0"
+    VERSION = "1.2.0"
     ROLE = "auditor"
 
     def __init__(self, work_dir: Optional[Path] = None):
@@ -1456,6 +1456,109 @@ class BarbossaAuditor:
 
         return actions
 
+    def _create_quality_issues(self, patterns: List[Dict], recommendations: List[str]) -> int:
+        """Create GitHub issues for CRITICAL quality problems that need action"""
+        issues_created = 0
+
+        # Only create issues for HIGH severity patterns
+        critical_patterns = [p for p in patterns if p.get('severity') == 'high']
+
+        if not critical_patterns:
+            return 0
+
+        self.logger.info("\n" + "="*70)
+        self.logger.info("CREATING QUALITY IMPROVEMENT ISSUES")
+        self.logger.info("="*70)
+
+        # Group patterns by repository
+        patterns_by_repo = {}
+        for pattern in critical_patterns:
+            repo = pattern.get('repo')
+            if repo:
+                if repo not in patterns_by_repo:
+                    patterns_by_repo[repo] = []
+                patterns_by_repo[repo].append(pattern)
+
+        # Create one consolidated issue per repo (avoid spam)
+        for repo_name, repo_patterns in patterns_by_repo.items():
+            # Check if we already have a recent quality issue
+            existing_issues = self._get_existing_issues(repo_name, 'quality')
+
+            # Skip if we already created a quality issue in the last 7 days
+            if existing_issues:
+                self.logger.info(f"Skipping {repo_name} - quality issue already exists")
+                continue
+
+            # Build consolidated issue
+            title = f"quality: address {len(repo_patterns)} critical quality issues"
+
+            body_sections = ["## Quality Issues Detected by Auditor\n"]
+            body_sections.append(f"The Auditor detected **{len(repo_patterns)} critical quality issues** that require attention:\n")
+
+            for i, pattern in enumerate(repo_patterns, 1):
+                ptype = pattern.get('type', 'unknown')
+                # Find matching recommendation
+                matching_rec = next((r for r in recommendations if repo_name in r and ptype.replace('_', ' ') in r.lower()), '')
+
+                body_sections.append(f"### {i}. {ptype.replace('_', ' ').title()}")
+                if matching_rec:
+                    body_sections.append(f"{matching_rec}\n")
+                else:
+                    body_sections.append(f"Pattern: {ptype}\n")
+
+            body_sections.append("\n## Action Required")
+            body_sections.append("Please review and address these quality issues to improve codebase health.")
+            body_sections.append("\n---")
+            body_sections.append(f"*Created by Barbossa Auditor v{self.VERSION}*")
+
+            body = '\n'.join(body_sections)
+
+            # Create the issue
+            if self._create_github_issue(repo_name, title, body, ['quality', 'backlog']):
+                issues_created += 1
+
+        return issues_created
+
+    def _get_existing_issues(self, repo_name: str, label: str) -> List[Dict]:
+        """Get existing issues with a specific label (created in last 7 days)"""
+        cutoff = (datetime.now() - timedelta(days=7)).isoformat()
+        cmd = f'gh issue list --repo {self.owner}/{repo_name} --label {label} --state open --json number,title,createdAt --limit 100'
+        result = self._run_cmd(cmd, timeout=10)
+
+        if not result:
+            return []
+
+        try:
+            issues = json.loads(result)
+            # Filter to only recent issues
+            return [i for i in issues if i.get('createdAt', '') >= cutoff]
+        except json.JSONDecodeError:
+            return []
+
+    def _create_github_issue(self, repo_name: str, title: str, body: str, labels: List[str]) -> bool:
+        """Create a GitHub issue"""
+        label_str = ','.join(labels)
+
+        # Write body to temp file
+        body_file = self.work_dir / 'temp_auditor_issue.md'
+        with open(body_file, 'w') as f:
+            f.write(body)
+
+        # Escape title
+        escaped_title = title.replace('"', '\\"')
+        cmd = f'gh issue create --repo {self.owner}/{repo_name} --title "{escaped_title}" --body-file {body_file} --label "{label_str}"'
+
+        result = self._run_cmd(cmd, timeout=30)
+        body_file.unlink(missing_ok=True)
+
+        if result:
+            self.logger.info(f"✅ Created quality issue: {title}")
+            self.logger.info(f"   URL: {result}")
+            return True
+        else:
+            self.logger.warning(f"Failed to create issue: {title}")
+            return False
+
     # =========================================================================
     # RECOMMENDATIONS
     # =========================================================================
@@ -1804,6 +1907,9 @@ class BarbossaAuditor:
         # Execute self-healing actions
         self_healing_actions = self._execute_self_healing()
 
+        # Create GitHub issues for CRITICAL quality problems
+        created_issues = self._create_quality_issues(patterns, recommendations)
+
         # Calculate health score
         health_score = self._calculate_health_score(pr_stats, log_analysis, patterns)
 
@@ -1814,6 +1920,9 @@ class BarbossaAuditor:
         for action in self_healing_actions:
             status_icon = "✅" if action.get('status') == 'ok' or action.get('cleaned', 0) > 0 or action.get('deleted', 0) > 0 else "⚠️" if action.get('status') == 'warning' else "❌" if action.get('status') in ['error', 'expired'] else "➖"
             self.logger.info(f"  {status_icon} {action['action']}: {action['message']}")
+
+        if created_issues:
+            self.logger.info(f"\n📋 Created {created_issues} quality improvement issues")
 
         self.logger.info(f"\n{'='*70}")
         self.logger.info(f"SYSTEM HEALTH SCORE: {health_score}/100")
@@ -1897,7 +2006,7 @@ def main():
     import argparse
 
     parser = argparse.ArgumentParser(
-        description='Barbossa Auditor v5.3 - System Health & Self-Improvement'
+        description='Barbossa Auditor v1.2.0 - System Health & Self-Improvement'
     )
     parser.add_argument(
         '--days',

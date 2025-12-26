@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Barbossa Product Manager v5.8 - Autonomous Feature Discovery Agent
+Barbossa Product Manager v1.2.0 - Autonomous Feature Discovery Agent
 Runs daily to analyze products and create feature Issues for the backlog.
 
 Part of the Pipeline:
@@ -42,7 +42,7 @@ from barbossa_firebase import (
 class BarbossaProduct:
     """Product Manager agent that creates feature Issues for the pipeline."""
 
-    VERSION = "1.1.0"
+    VERSION = "1.2.0"
     DEFAULT_MAX_ISSUES_PER_RUN = 3
     DEFAULT_FEATURE_BACKLOG_THRESHOLD = 20
 
@@ -361,11 +361,21 @@ KEY FILES:
         if not result:
             return None
 
+        # Check for explicit "NO SUGGESTION" response
+        if "NO SUGGESTION" in result.upper():
+            self.logger.info("Claude explicitly declined to suggest a feature (NO SUGGESTION)")
+            return None
+
         try:
             # Claude CLI returns wrapper JSON with result field
             wrapper = json.loads(result)
             if 'result' in wrapper:
                 inner_result = wrapper['result']
+
+                # Check for NO SUGGESTION in the result
+                if "NO SUGGESTION" in inner_result.upper():
+                    self.logger.info("Claude explicitly declined to suggest a feature (NO SUGGESTION)")
+                    return None
 
                 # Extract JSON from markdown code block if present
                 json_block_match = re.search(r'```json\s*\n([\s\S]*?)\n```', inner_result)
@@ -413,6 +423,7 @@ KEY FILES:
             except Exception as ex:
                 self.logger.warning(f"Failed fallback JSON extraction: {ex}")
 
+        self.logger.warning("Could not parse feature suggestion from Claude response")
         return None
 
     def _extract_keywords(self, text: str) -> set:

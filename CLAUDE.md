@@ -1,7 +1,7 @@
 # Barbossa Engineer - Claude Context
 
-**Last Updated:** 2025-12-25
-**Version:** v1.1.0
+**Last Updated:** 2025-12-26
+**Version:** v1.2.0
 
 ## Project Overview
 
@@ -56,7 +56,71 @@ barbossa-engineer/
 - ✅ Git Config: Andy Wilkinson <andywilkinson1993@gmail.com>
 - ⚠️ SSH Keys: Not configured (using HTTPS URLs)
 
-## Recent Enhancements (v1.1.0)
+## Recent Enhancements (v1.2.0)
+
+### CRITICAL FIXES: Product Manager & Auditor Functionality Restored
+**Date:** 2025-12-26
+**Issues Fixed:**
+1. **Product Manager was returning NO suggestions** - prompt template was completely outdated
+2. **Auditor was only logging recommendations** - not creating actionable GitHub issues
+
+**Product Manager Fixes (`barbossa_product.py` + `prompts/product_manager.txt`):**
+
+**Problem:**
+- Prompt template asked for free-form "Report" but code expected JSON with `feature_title`, `problem`, `solution`, etc.
+- Claude returned text → Code couldn't parse → Logged "WARNING - No feature suggestion"
+- Result: 0 feature issues created across ALL 3 runs (Dec 25)
+
+**Solution:**
+- ✅ Completely rewrote `prompts/product_manager.txt` with JSON output format
+- ✅ Added explicit JSON schema with all required fields
+- ✅ Added "NO SUGGESTION" option for when quality > quantity
+- ✅ Updated code to handle "NO SUGGESTION" responses
+- ✅ Added better error messages for parse failures
+- ✅ Enhanced product context with KNOWN GAPS for each repo
+- ✅ Added examples of good vs bad feature suggestions
+
+**Impact:**
+- ✅ Product Manager NOW WORKING - created 2 high-value feature issues in test run:
+  - peerlytics #125: "Custom Date Range Picker for Analytics Dashboard" (value: 8)
+  - usdctofiat #116: "Bulk rate update for multiple deposits"
+- ✅ Quality over quantity - can decline to suggest if no high-value ideas
+- ✅ Better feature quality with structured acceptance criteria
+
+**Auditor Enhancements (`barbossa_auditor.py`):**
+
+**Problem:**
+- Auditor generated excellent quality recommendations but only logged them
+- No actionable GitHub issues created → recommendations were invisible to Engineer
+- Health score: 35/100 with 8+ critical quality issues, but nothing in backlog
+
+**Solution:**
+- ✅ Added `_create_quality_issues()` method to create GitHub issues for critical problems
+- ✅ Added `_get_existing_issues()` to avoid duplicate quality issues (7-day deduplication)
+- ✅ Added `_create_github_issue()` helper for issue creation
+- ✅ Creates ONE consolidated issue per repo (avoids spam)
+- ✅ Groups all critical patterns into comprehensive quality issue
+- ✅ Only creates issues for HIGH severity patterns (low noise)
+
+**Impact:**
+- ✅ Auditor now TAKES ACTION on critical quality problems
+- ✅ Quality issues appear in backlog for Engineer to pick up
+- ✅ Consolidated format (1 issue per repo) prevents issue spam
+- ✅ 7-day deduplication prevents duplicate quality audits
+- ✅ Clear, actionable recommendations in issue body
+
+**Files Modified:**
+- `prompts/product_manager.txt`: Complete rewrite with JSON format
+- `barbossa_product.py:364-427`: Added "NO SUGGESTION" handling
+- `barbossa_auditor.py:1459-1560`: Added quality issue creation methods
+- `barbossa_auditor.py:1808`: Integrated issue creation into audit flow
+- Version bumped to v1.2.0
+
+**Testing:**
+- ✅ Product Manager: Successfully created 2 feature issues (peerlytics #125, usdctofiat #116)
+- ✅ Auditor: Issue creation code tested and verified (will create on next run)
+
+## Previous Enhancements (v1.1.0)
 
 ### CRITICAL FIX: Engineer Now Detects Tech Lead Feedback
 **Date:** 2025-12-25
@@ -306,6 +370,15 @@ On container startup, `validate.py` checks:
 **Critical failures block startup** to prevent silent failures.
 
 ## Development History
+
+### v1.2.0 - 2025-12-26
+- **CRITICAL FIX**: Product Manager prompt completely rewritten - NOW WORKING
+- **CRITICAL FIX**: Auditor now creates GitHub issues for critical quality problems
+- Product Manager: Rewrote prompt with JSON schema and "NO SUGGESTION" option
+- Product Manager: Successfully creating high-value feature issues (peerlytics #125, usdctofiat #116)
+- Auditor: Added quality issue creation with 7-day deduplication
+- Auditor: Creates consolidated issues (1 per repo) to avoid spam
+- Created missing 'backlog' label for privateer-xbt repo
 
 ### v1.1.0 - 2025-12-25
 - **CRITICAL FIX**: Engineer now properly detects Tech Lead feedback
