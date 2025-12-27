@@ -146,11 +146,18 @@ QUALITY STANDARDS
 - Write clean, maintainable code
 
 MANDATORY TEST REQUIREMENTS:
+- BUG FIXES MUST include tests that verify the fix works and prevent regression
 - If you add or modify >{{min_lines_for_tests}} lines of code with business logic, you MUST add tests
-- Check for existing test patterns: look for *.test.ts or *.test.tsx files
-- Tests should cover the core functionality, not just edge cases
-- If you can't add tests (e.g., no test setup), document why in PR description
-- Tech Lead WILL REJECT PRs with >{{min_lines_for_tests}} lines and no tests
+- Check for existing test patterns:
+  - Swift/iOS: Look for *Tests.swift files, use XCTest framework
+  - TypeScript: Look for *.test.ts or *.test.tsx files
+  - Follow the existing test structure in the project
+- Tests should:
+  1. Reproduce the bug scenario (what was failing)
+  2. Verify the fix works (what now passes)
+  3. Cover edge cases related to the fix
+- If you can't add tests (e.g., no test setup), document why in PR description AND create a follow-up issue
+- Tech Lead WILL REJECT bug fix PRs without accompanying tests
 
 ABSOLUTELY DO NOT:
 - Start coding without completing PHASE 0 (state check) first
