@@ -250,7 +250,8 @@ Phase 4 - Submission:
   git push origin barbossa/{{timestamp}}
 
   # CRITICAL: PR title MUST start with Linear issue ID
-  gh pr create --title "MUS-XX: Clear, descriptive title" --body "
+  # Create as DRAFT to avoid wasting CI minutes on intermediate fixes
+  gh pr create --draft --title "MUS-XX: Clear, descriptive title" --body "
 ## Summary
 Fixes [MUS-XX](https://linear.app/musedrop/issue/MUS-XX): Brief description of the issue.
 

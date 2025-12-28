@@ -257,12 +257,12 @@ class Barbossa:
                     issues_context = tracker.get_issues_context(limit=10)
                     issue_list_command += issues_context
 
-                    # Backlog section with actual issues
+                    # To-Do section with prioritized issues
                     backlog_section = f"""Before inventing work, check if there are Issues ready to implement:
 
-{tracker.get_issues_context(state="Backlog", limit=5)}
+{tracker.get_issues_context(state="To-Do", limit=5)}
 
-If there ARE backlog issues above:
+If there ARE To-Do issues above:
   1. Pick the FIRST one (already prioritized)
   2. Implement exactly what's requested
   3. Name your branch: barbossa/<issue-identifier>-description
@@ -747,7 +747,11 @@ Phase 3 - Fix:
 Phase 4 - Update PR:
   git add -A
   git commit -m "fix: address CI failures / review comments"
-  git push origin {pr_branch}"""
+  git push origin {pr_branch}
+
+  # If you believe all issues are fixed and CI should pass:
+  # Mark PR as ready for review (triggers final CI check)
+  gh pr ready {pr_number} --repo {owner}/{repo_name}"""
 
         return f"""You are Barbossa, an autonomous personal development assistant.
 
