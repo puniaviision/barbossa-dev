@@ -136,14 +136,20 @@ class BarbossaDiscovery:
             self.logger.warning(f"Failed to get backlog count: {e}")
             return 0
 
-    def _get_existing_issue_titles(self, repo_name: str) -> List[str]:
-        """Get titles of existing open issues to avoid duplicates."""
+    def _get_existing_issue_titles(self, repo_name: str) -> Optional[List[str]]:
+        """Get titles of existing open issues to avoid duplicates.
+
+        Returns None on failure to distinguish from empty list.
+        Caller should skip issue creation if None is returned.
+        """
         try:
             tracker = self._get_issue_tracker(repo_name)
-            return tracker.get_existing_titles(limit=50)
+            titles = tracker.get_existing_titles(limit=50)
+            self.logger.info(f"Successfully fetched {len(titles)} existing titles for deduplication")
+            return titles
         except Exception as e:
-            self.logger.warning(f"Failed to get existing titles: {e}")
-            return []
+            self.logger.error(f"CRITICAL: Failed to get existing titles - skipping discovery to prevent duplicates: {e}")
+            return None  # Return None to signal failure, not empty list
 
     def _create_issue(self, repo_name: str, title: str, body: str, labels: List[str] = None) -> bool:
         """Create an issue using the configured tracker."""
@@ -157,7 +163,15 @@ class BarbossaDiscovery:
                 return True
             return False
         except Exception as e:
+            import traceback
             self.logger.error(f"Failed to create issue: {e}")
+            # Write full traceback to file
+            traceback_file = self.work_dir / 'discovery_create_issue_error.txt'
+            with open(traceback_file, 'w') as f:
+                f.write(f"Error creating issue: {title}\n")
+                f.write(f"Labels: {labels}\n\n")
+                f.write(traceback.format_exc())
+            self.logger.error(f"Full traceback written to {traceback_file}")
             return False
 
     def _clone_or_update_repo(self, repo: Dict) -> Optional[Path]:
@@ -165,13 +179,27 @@ class BarbossaDiscovery:
         repo_name = repo['name']
         repo_path = self.projects_dir / repo_name
 
-        if repo_path.exists():
-            self._run_cmd("git fetch origin && git checkout main && git pull origin main", cwd=str(repo_path))
-        else:
-            self._run_cmd(f"git clone {repo['url']} {repo_name}", cwd=str(self.projects_dir))
+        print(f"DEBUG: Checking repo: {repo_name}")
+        print(f"DEBUG: Projects dir: {self.projects_dir}")
+        print(f"DEBUG: Repo path: {repo_path}")
+        print(f"DEBUG: Repo exists: {repo_path.exists()}")
+        self.logger.info(f"Checking repo: {repo_name} at {repo_path}")
 
         if repo_path.exists():
+            print("DEBUG: Repo exists, pulling latest...")
+            result = self._run_cmd("git fetch origin && git checkout main && git pull origin main", cwd=str(repo_path))
+            print(f"DEBUG: Git pull result: {result is not None}")
+        else:
+            print("DEBUG: Repo doesn't exist, cloning...")
+            result = self._run_cmd(f"git clone {repo['url']} {repo_name}", cwd=str(self.projects_dir))
+            print(f"DEBUG: Git clone result: {result is not None}")
+
+        print(f"DEBUG: After git operation, repo exists: {repo_path.exists()}")
+        if repo_path.exists():
+            print(f"DEBUG: Returning repo path: {repo_path}")
             return repo_path
+
+        print(f"DEBUG: Repo path doesn't exist after clone/update: {repo_path}")
         return None
 
     def _analyze_todos(self, repo_path: Path) -> List[Dict]:
@@ -181,18 +209,36 @@ class BarbossaDiscovery:
 
         for pattern in patterns:
             result = self._run_cmd(
-                f"grep -rn '{pattern}' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist . | head -20",
+                f"grep -rn '{pattern}' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --include='*.swift' --include='*.m' --include='*.h' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist --exclude-dir=Pods --exclude-dir=build . | head -20",
                 cwd=str(repo_path)
             )
             if result:
                 for line in result.split('\n')[:5]:  # Limit to 5 per pattern
                     if line.strip():
-                        findings.append({
-                            'type': 'todo',
-                            'pattern': pattern,
-                            'location': line.split(':')[0] if ':' in line else 'unknown',
-                            'content': line
-                        })
+                        # Parse grep output: file:linenum:content
+                        parts = line.split(':', 2)
+                        if len(parts) >= 3:
+                            file_path = parts[0]
+                            line_num = parts[1]
+                            comment_text = parts[2].strip()
+
+                            # Skip feature requests (look for implementation keywords)
+                            feature_keywords = ['implement', 'add feature', 'build', 'create feature', 'new feature']
+                            is_feature_request = any(keyword in comment_text.lower() for keyword in feature_keywords)
+
+                            if is_feature_request:
+                                self.logger.debug(f"Skipping feature-request TODO: {comment_text}")
+                                continue
+
+                            findings.append({
+                                'type': 'todo',
+                                'pattern': pattern,
+                                'location': f"{file_path}:{line_num}",
+                                'file': file_path,
+                                'line': line_num,
+                                'comment': comment_text,
+                                'content': line
+                            })
 
         return findings[:10]  # Max 10 findings
 
@@ -285,29 +331,49 @@ class BarbossaDiscovery:
         return findings[:5]
 
     def _analyze_console_logs(self, repo_path: Path) -> List[Dict]:
-        """Find console.log statements that should be removed."""
+        """Find console.log/print statements that should be replaced with proper logging."""
         findings = []
 
-        result = self._run_cmd(
-            "grep -rn 'console\\.log' --include='*.ts' --include='*.tsx' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist . | grep -v '.test.' | head -10",
+        # Check for JavaScript console.log
+        js_result = self._run_cmd(
+            "grep -rn 'console\\.log' --include='*.ts' --include='*.tsx' --include='*.js' --include='*.jsx' --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=dist . | grep -v '.test.' | head -10",
             cwd=str(repo_path)
         )
 
-        if result:
-            files_with_logs = set()
-            for line in result.split('\n'):
+        # Check for Swift print statements
+        swift_result = self._run_cmd(
+            "grep -rn 'print(' --include='*.swift' --exclude-dir=Pods --exclude-dir=build . | grep -v 'Tests.swift' | head -10",
+            cwd=str(repo_path)
+        )
+
+        # Parse each line to extract file, line number, and actual statement
+        if js_result:
+            for line in js_result.split('\n'):
                 if line.strip():
-                    file = line.split(':')[0]
-                    files_with_logs.add(file)
+                    parts = line.split(':', 2)
+                    if len(parts) >= 3:
+                        findings.append({
+                            'type': 'cleanup',
+                            'language': 'javascript',
+                            'file': parts[0],
+                            'line': parts[1],
+                            'statement': parts[2].strip()
+                        })
 
-            if files_with_logs:
-                findings.append({
-                    'type': 'cleanup',
-                    'issue': 'Console.log statements in production code',
-                    'files': list(files_with_logs)[:5]
-                })
+        if swift_result:
+            for line in swift_result.split('\n'):
+                if line.strip():
+                    parts = line.split(':', 2)
+                    if len(parts) >= 3:
+                        findings.append({
+                            'type': 'cleanup',
+                            'language': 'swift',
+                            'file': parts[0],
+                            'line': parts[1],
+                            'statement': parts[2].strip()
+                        })
 
-        return findings
+        return findings[:10]  # Max 10 statements
 
     def _generate_issue_from_findings(self, repo_name: str, findings: List[Dict], category: str) -> Optional[Dict]:
         """Generate a GitHub Issue from findings."""
@@ -317,18 +383,25 @@ class BarbossaDiscovery:
         if category == 'todo':
             title = f"fix: address {len(findings)} TODO/FIXME comments"
             body = """## Summary
-Found several TODO/FIXME/HACK comments that should be addressed.
+Found TODO/FIXME/HACK comments that should be addressed.
 
 ## Findings
 """
             for f in findings:
-                body += f"- `{f['location']}`: {f['pattern']}\n"
+                body += f"\n**{f['location']}**\n"
+                body += f"```\n{f['comment']}\n```\n"
 
             body += """
 ## Acceptance Criteria
-- [ ] Address each TODO/FIXME comment
-- [ ] Either implement the fix or remove if no longer relevant
+- [ ] Review each TODO/FIXME comment above
+- [ ] Implement the fix or refactoring needed
+- [ ] If no longer relevant, remove the comment
 - [ ] Run build and tests to verify
+
+## Notes
+- Some TODOs may be related and can be addressed together
+- If a TODO requires significant work, consider breaking into a separate feature ticket
+- Update documentation if the TODO involves architectural changes
 
 ---
 *Created by Barbossa Discovery Agent*
@@ -395,21 +468,54 @@ Found accessibility issues that should be fixed for better UX.
 """
 
         elif category == 'cleanup':
-            files = findings[0].get('files', []) if findings else []
-            title = "chore: remove console.log statements"
+            # Group findings by language
+            swift_statements = [f for f in findings if f.get('language') == 'swift']
+            js_statements = [f for f in findings if f.get('language') == 'javascript']
+
+            title = "refactor: replace debug print statements with proper logging"
             body = """## Summary
-Found console.log statements in production code that should be removed.
+Found debug print/console.log statements in production code. These should be replaced with proper logging frameworks for better control and observability in production.
 
-## Files
 """
-            for f in files:
-                body += f"- `{f}`\n"
+            if swift_statements:
+                body += f"## Swift print() statements ({len(swift_statements)} found)\n\n"
+                body += "Replace with `os.log` or structured logging framework:\n\n"
+                for f in swift_statements[:10]:
+                    body += f"**{f['file']}:{f['line']}**\n"
+                    body += f"```swift\n{f['statement']}\n```\n\n"
 
-            body += """
-## Acceptance Criteria
-- [ ] Remove or replace with proper logging
-- [ ] Keep any intentional debug logs (mark with // eslint-disable-line)
-- [ ] Verify build passes
+                body += """**Recommended approach for Swift:**
+```swift
+import os.log
+
+// Define logger
+private let logger = Logger(subsystem: Bundle.main.bundleIdentifier ?? "app", category: "YourCategory")
+
+// Replace print() with:
+logger.error("Failed to load profile: \\(error)")
+logger.info("Credits added successfully. New balance: \\(newBalance)")
+```
+
+"""
+
+            if js_statements:
+                body += f"## JavaScript console.log statements ({len(js_statements)} found)\n\n"
+                body += "Replace with proper logging framework (e.g., winston, pino):\n\n"
+                for f in js_statements[:10]:
+                    body += f"**{f['file']}:{f['line']}**\n"
+                    body += f"```javascript\n{f['statement']}\n```\n\n"
+
+            body += """## Acceptance Criteria
+- [ ] Replace print()/console.log with appropriate logging framework
+- [ ] Use correct log levels (error, warning, info, debug)
+- [ ] Verify logging works in production builds
+- [ ] Remove or disable debug-only logs for production
+- [ ] Test that critical errors are still visible
+
+## Notes
+- DO NOT simply remove these statements - many are error logging
+- Error logs should be preserved with proper logging framework
+- Use log levels to control verbosity in production vs development
 
 ---
 *Created by Barbossa Discovery Agent*
@@ -423,62 +529,165 @@ Found console.log statements in production code that should be removed.
     def discover_for_repo(self, repo: Dict) -> int:
         """Run discovery for a single repository. Returns number of issues created."""
         repo_name = repo['name']
+        print(f"DEBUG: discover_for_repo called for {repo_name}")
         self.logger.info(f"\n{'='*60}")
         self.logger.info(f"DISCOVERING: {repo_name}")
         self.logger.info(f"{'='*60}")
 
         # Check backlog size
         backlog_count = self._get_backlog_count(repo_name)
+        print(f"DEBUG: backlog_count = {backlog_count}, threshold = {self.BACKLOG_THRESHOLD}")
         self.logger.info(f"Current backlog: {backlog_count} issues")
 
         if backlog_count >= self.BACKLOG_THRESHOLD:
+            print(f"DEBUG: Backlog full, exiting early")
             self.logger.info(f"Backlog full (>= {self.BACKLOG_THRESHOLD}), skipping discovery")
             return 0
 
+        print(f"DEBUG: Calling _clone_or_update_repo...")
         # Clone/update repo
         repo_path = self._clone_or_update_repo(repo)
+        print(f"DEBUG: _clone_or_update_repo returned: {repo_path}")
         if not repo_path:
             self.logger.error(f"Could not access repo: {repo_name}")
             return 0
 
-        # Get existing issues to avoid duplicates
-        existing_titles = self._get_existing_issue_titles(repo_name)
+        print(f"DEBUG: Repo path is valid, continuing with analyses...")
+        self.logger.info(f"Repo path: {repo_path}, exists: {repo_path.exists()}")
 
-        issues_created = 0
-        issues_needed = self.BACKLOG_THRESHOLD - backlog_count
+        try:
+            # Get existing issues to avoid duplicates
+            # CRITICAL: If this fails, skip discovery entirely to prevent duplicates
+            existing_titles = self._get_existing_issue_titles(repo_name)
+            if existing_titles is None:
+                self.logger.error("Aborting discovery - cannot verify duplicates without existing titles")
+                return 0
+            self.logger.info(f"Fetched {len(existing_titles)} existing issue titles")
 
-        # Run analyses
-        analyses = [
-            ('todo', self._analyze_todos(repo_path)),
-            ('loading', self._analyze_missing_loading_states(repo_path)),
-            ('error', self._analyze_missing_error_handling(repo_path)),
-            ('a11y', self._analyze_accessibility(repo_path)),
-            ('cleanup', self._analyze_console_logs(repo_path)),
-        ]
+            issues_created = 0
+            issues_needed = self.BACKLOG_THRESHOLD - backlog_count
 
-        for category, findings in analyses:
-            if issues_created >= issues_needed:
-                break
+            self.logger.info(f"Running {len(['todo', 'loading', 'error', 'a11y', 'cleanup'])} analyses, need {issues_needed} issues")
 
-            if not findings:
-                continue
+            # Run analyses with individual exception handling
+            analyses = []
 
-            issue = self._generate_issue_from_findings(repo_name, findings, category)
-            if not issue:
-                continue
+            try:
+                self.logger.info("Starting TODO analysis...")
+                todo_findings = self._analyze_todos(repo_path)
+                analyses.append(('todo', todo_findings))
+                self.logger.info(f"TODO analysis complete: {len(todo_findings) if todo_findings else 0} findings")
+            except Exception as e:
+                self.logger.error(f"TODO analysis failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
 
-            # Check for duplicate
-            if issue['title'].lower() in existing_titles:
-                self.logger.info(f"Skipping duplicate: {issue['title']}")
-                continue
+            try:
+                self.logger.info("Starting loading state analysis...")
+                loading_findings = self._analyze_missing_loading_states(repo_path)
+                analyses.append(('loading', loading_findings))
+                self.logger.info(f"Loading analysis complete: {len(loading_findings) if loading_findings else 0} findings")
+            except Exception as e:
+                self.logger.error(f"Loading analysis failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
 
-            # Create the issue
-            if self._create_issue(repo_name, issue['title'], issue['body']):
-                issues_created += 1
-                existing_titles.append(issue['title'].lower())
+            try:
+                self.logger.info("Starting error handling analysis...")
+                error_findings = self._analyze_missing_error_handling(repo_path)
+                analyses.append(('error', error_findings))
+                self.logger.info(f"Error analysis complete: {len(error_findings) if error_findings else 0} findings")
+            except Exception as e:
+                self.logger.error(f"Error analysis failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
 
-        self.logger.info(f"Created {issues_created} issues for {repo_name}")
-        return issues_created
+            try:
+                self.logger.info("Starting accessibility analysis...")
+                a11y_findings = self._analyze_accessibility(repo_path)
+                analyses.append(('a11y', a11y_findings))
+                self.logger.info(f"A11y analysis complete: {len(a11y_findings) if a11y_findings else 0} findings")
+            except Exception as e:
+                self.logger.error(f"A11y analysis failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
+
+            try:
+                self.logger.info("Starting console.log/print analysis...")
+                cleanup_findings = self._analyze_console_logs(repo_path)
+                analyses.append(('cleanup', cleanup_findings))
+                self.logger.info(f"Cleanup analysis complete: {len(cleanup_findings) if cleanup_findings else 0} findings")
+            except Exception as e:
+                self.logger.error(f"Cleanup analysis failed: {e}")
+                import traceback
+                self.logger.error(traceback.format_exc())
+
+            self.logger.info(f"All analyses complete, processing {len(analyses)} results")
+
+            for category, findings in analyses:
+                self.logger.info(f"Processing '{category}': {len(findings) if findings else 0} findings")
+
+                if issues_created >= issues_needed:
+                    self.logger.info(f"Reached issue limit ({issues_needed}), stopping")
+                    break
+
+                if not findings:
+                    self.logger.info(f"No findings for '{category}', skipping")
+                    continue
+
+                try:
+                    self.logger.info(f"Generating issue for '{category}' findings...")
+                    issue = self._generate_issue_from_findings(repo_name, findings, category)
+                    if not issue:
+                        self.logger.warning(f"Failed to generate issue for '{category}'")
+                        continue
+
+                    # Check for duplicate with normalized comparison
+                    normalized_title = issue['title'].lower().strip()
+                    is_duplicate = any(
+                        normalized_title == existing.strip()
+                        for existing in existing_titles
+                    )
+                    if is_duplicate:
+                        self.logger.info(f"Skipping duplicate issue: '{issue['title']}'")
+                        continue
+
+                    # Also check for similar titles (fuzzy match for refactor issues)
+                    if category == 'cleanup':
+                        similar_exists = any(
+                            'replace debug print' in existing or
+                            'console.log' in existing or
+                            'proper logging' in existing
+                            for existing in existing_titles
+                        )
+                        if similar_exists:
+                            self.logger.info(f"Skipping similar cleanup issue: '{issue['title']}'")
+                            continue
+
+                    # Create the issue
+                    self.logger.info(f"Creating issue: {issue['title']}")
+                    if self._create_issue(repo_name, issue['title'], issue['body']):
+                        issues_created += 1
+                        existing_titles.append(issue['title'].lower())
+                        self.logger.info(f"Successfully created issue {issues_created}/{issues_needed}")
+                    else:
+                        self.logger.warning(f"Failed to create issue: {issue['title']}")
+                except Exception as e:
+                    self.logger.error(f"Error processing findings for '{category}': {e}")
+                    import traceback
+                    self.logger.error(traceback.format_exc())
+
+            self.logger.info(f"Created {issues_created} issues for {repo_name}")
+            return issues_created
+
+        except Exception as e:
+            import traceback
+            self.logger.error(f"Error in discover_for_repo for {repo_name}: {e}")
+            error_file = self.work_dir / f'discovery_error_{repo_name}.txt'
+            with open(error_file, 'w') as f:
+                f.write(traceback.format_exc())
+            self.logger.error(f"Full traceback written to {error_file}")
+            return 0
 
     def _generate_session_id(self) -> str:
         """Generate unique session ID"""
