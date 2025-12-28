@@ -272,8 +272,37 @@ Description:
 | Bug fix | ✅ ALWAYS | Regression test |
 | New feature (>30 LOC) | ✅ ALWAYS | Unit/integration tests |
 | Refactoring | ✅ If logic changes | Unit tests |
+| Test infrastructure | ✅ If improves coverage | Infrastructure |
 | Documentation only | ❌ Not required | N/A |
 | UI-only changes | ⚠️ If testable | UI tests (future) |
+
+### Test-Only PRs (ACCEPTABLE)
+
+Test-only PRs are **valid and encouraged** for improving test suite quality:
+
+**Acceptable Test-Only PR Scenarios:**
+- ✅ Adding regression tests for fixed bugs (preventing recurrence)
+- ✅ Improving coverage for existing features (integration, E2E tests)
+- ✅ Expanding test infrastructure (mocks, helpers, utilities)
+- ✅ Adding smoke tests for critical user flows
+- ✅ Fixing flaky tests or improving test reliability
+
+**Requirements:**
+- Must reference a Linear issue (same as all PRs)
+- Linear issue must explicitly request test infrastructure work
+- Must explain what coverage gap is being filled
+- Must follow existing test patterns
+- Should not refactor production code (test-only)
+
+**Example Valid Issues:**
+- "Add integration tests for drop opening flow"
+- "Add regression test for MUS-19 sellback bug"
+- "Create MockContentStore for integration testing"
+- "Add smoke tests for critical path (open, add, ship)"
+
+**Note:** Test-only PRs are infrastructure improvements, not scope creep. The key distinction is that test work must be REQUESTED in a Linear issue, not self-discovered by the engineer.
+
+---
 
 ### Test Patterns by Platform
 
@@ -544,6 +573,7 @@ Run this audit monthly to ensure governance compliance:
 | 1.1 | 2025-12-27 | Added Linear validation, test requirements |
 | 1.2 | 2025-12-27 | Added documentation maintenance requirements |
 | 1.3 | 2025-12-28 | Added required PR footer to identify Barbossa agent work |
+| 1.4 | 2025-12-28 | Added nuanced test-only PR rules (acceptable when explicitly requested in Linear) |
 
 ---
 

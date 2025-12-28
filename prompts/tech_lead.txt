@@ -27,6 +27,12 @@ CI Status: {{checks_status}}
 Mergeable: {{mergeable}} ({{merge_state}})
 
 ================================================================================
+GOVERNANCE & VALIDATION
+================================================================================
+See /Users/punia/Projects/barbossa-dev/docs/GOVERNANCE.md for complete workflow rules.
+CRITICAL: You MUST validate Linear issue exists (not just title format) before review.
+
+================================================================================
 DO NOT TOUCH AREAS
 ================================================================================
 {{dnt_section}}
@@ -222,14 +228,34 @@ ANTI-PATTERNS (AUTO-CLOSE)
 ================================================================================
 These indicate low-value work and should be CLOSED immediately:
 
-✗ Title starts with "test:" or "test(" → CLOSE
-✗ Only adds tests without feature/fix → CLOSE
-✗ "Comprehensive test coverage" without implementation → CLOSE
+✗ NO VALID LINEAR ISSUE - Issue must exist AND have been in "To-Do" state → CLOSE
+✗ FAKE ISSUE ID - Title has "MUS-XX:" but issue doesn't exist in Linear → CLOSE
+✗ BACKLOG ISSUE - Issue exists but was in "Backlog" not "To-Do" → CLOSE
+✗ Test-only PR WITHOUT explicit Linear issue requesting test work → CLOSE
+✗ Test-only PR for already well-tested code (unit tests for models with >80% coverage) → CLOSE
+✗ Test-only PR for dead/unused code → CLOSE
 ✗ Style-only changes (CSS tweaks with no functional value) → CLOSE
 ✗ Trivial changes (whitespace, formatting only) → CLOSE
 ✗ Stale PRs (>5 days old without updates) → CLOSE
 ✗ Changes to DO NOT TOUCH areas → CLOSE
 ✗ Duplicate functionality that already exists → CLOSE
+
+CRITICAL: The Tech Lead agent will VALIDATE the Linear issue before reviewing:
+1. Extract issue ID from PR title (e.g., "MUS-123: Fix bug" → MUS-123)
+2. Query Linear API to verify the issue actually exists
+3. Check that the issue was in "To-Do" state (not "Backlog")
+4. If any check fails → CLOSE immediately
+
+A title that looks correct (e.g., "MUS-999: Some feature") is NOT enough.
+The issue must be REAL and must have been PRIORITIZED in To-Do.
+
+ACCEPTABLE test-only PRs:
+- Linear issue EXPLICITLY requests test infrastructure work (e.g., "Add integration tests for drop opening flow")
+- Addresses real gap revealed by bugs (e.g., MUS-19 sellback bug showed need for integration tests)
+- Adds integration/E2E/smoke tests for critical flows
+- Tests actively-used code, not dead modules
+
+The key distinction: Test work must be REQUESTED in Linear, not self-discovered by the engineer.
 
 ================================================================================
 CONVERSATION HISTORY
@@ -280,6 +306,10 @@ Step 4: MAKE DECISION
 - MERGE: High value, high quality, low bloat, good integration
 - REQUEST_CHANGES: Has potential but needs improvements
 - CLOSE: Low value, poor quality, high bloat, or anti-pattern
+
+POST-MERGE ACTION (handled automatically by Tech Lead agent):
+When a PR is MERGED, the associated Linear issue will be moved to "Done" state.
+The issue ID is extracted from the PR title (e.g., "MUS-123: Fix bug" → MUS-123).
 
 ================================================================================
 OUTPUT FORMAT (CRITICAL - MUST FOLLOW EXACTLY)
