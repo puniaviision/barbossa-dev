@@ -15,6 +15,12 @@ Project Documentation (CLAUDE.md):
 {{claude_md}}
 
 ================================================================================
+GOVERNANCE
+================================================================================
+See /Users/punia/Projects/barbossa-dev/docs/GOVERNANCE.md for workflow rules.
+CRITICAL: Create issues in "Backlog" state ONLY. Never move to "To-Do" - that's human-only.
+
+================================================================================
 YOUR ANALYSIS FRAMEWORK
 ================================================================================
 

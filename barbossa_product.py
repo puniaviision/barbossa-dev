@@ -323,6 +323,50 @@ KEY FILES:
 - src/lib/zkp2pClient.ts - SDK singleton
 """
 
+        elif repo_name == 'muse':
+            # Read product docs from repo
+            repo_path = self.projects_dir / repo_name
+            docs_dir = repo_path / 'docs'
+
+            context_parts = ["MUSE - Luxury Gacha iOS App\n"]
+
+            # Read north-star.md for product vision
+            north_star = docs_dir / 'north-star.md'
+            if north_star.exists():
+                with open(north_star, 'r') as f:
+                    context_parts.append("=== PRODUCT VISION (north-star.md) ===\n")
+                    context_parts.append(f.read()[:8000])  # Limit to 8KB
+                    context_parts.append("\n\n")
+
+            # Read USER_FLOWS.md for v1 scope
+            user_flows = docs_dir / 'USER_FLOWS.md'
+            if user_flows.exists():
+                with open(user_flows, 'r') as f:
+                    content = f.read()
+                    # Extract v1 scope section if it exists
+                    context_parts.append("=== V1 USER FLOWS (USER_FLOWS.md) ===\n")
+                    context_parts.append(content[:10000])  # Limit to 10KB
+                    context_parts.append("\n\n")
+
+            context_parts.append("""
+CRITICAL INSTRUCTIONS FOR FEATURE SUGGESTIONS:
+- ONLY suggest features that align with v1 scope defined in USER_FLOWS.md
+- v1 is focused on core gacha mechanics: browse drops, pull/reveal, collect items
+- v1 does NOT include: social features, sharing, referrals, leaderboards, chat
+- Features must solve real pain points in the existing user flows
+- Prioritize features that improve conversion (pulls per user) or retention
+- Avoid nice-to-haves that don't impact core business metrics
+
+KNOWN V1 GAPS TO PRIORITIZE:
+- Payment edge cases (failed charges, partial refunds)
+- Inventory management (sold out handling)
+- User onboarding friction
+- Collection management UX
+- Credits purchase flow optimization
+""")
+
+            return "".join(context_parts)
+
         return ""
 
     def _analyze_with_claude(self, repo: Dict, claude_md: str) -> Optional[Dict]:
@@ -431,8 +475,23 @@ KEY FILES:
         new_keywords = self._extract_keywords(new_title)
 
         for issue in existing_issues:
+            # Skip if issue is not a dict (shouldn't happen, but defensive)
+            if not isinstance(issue, dict):
+                continue
+
             # Only check feature/product issues
-            labels = [l.get('name', '') for l in issue.get('labels', [])]
+            # Handle both string labels (Linear) and dict labels (GitHub)
+            raw_labels = issue.get('labels', [])
+            if isinstance(raw_labels, list) and raw_labels:
+                # If first item is a string, labels are already strings
+                if isinstance(raw_labels[0], str):
+                    labels = raw_labels
+                # If first item is a dict, extract 'name' key
+                else:
+                    labels = [l.get('name', '') for l in raw_labels]
+            else:
+                labels = []
+
             if 'feature' not in labels and 'product' not in labels:
                 continue
 
@@ -456,6 +515,7 @@ KEY FILES:
 
     def _generate_issue_body(self, feature: Dict, repo_name: str) -> str:
         """Generate the Issue body from feature analysis."""
+        print(f"DEBUG _generate_issue_body: feature type = {type(feature)}, feature = {feature}", flush=True)
         acceptance = '\n'.join([f"- [ ] {c}" for c in feature.get('acceptance_criteria', [])])
 
         return f"""## Problem
@@ -530,20 +590,38 @@ KEY FILES:
         self.logger.info(f"Feature title: {title}")
 
         # Check for exact/substring duplicates
-        title_lower = title.lower()
-        is_exact_duplicate = any(
-            existing in title_lower or title_lower in existing
-            for existing in all_existing
-        )
+        try:
+            print(f"DEBUG: About to check duplicates, all_existing = {all_existing[:2] if all_existing else []}", flush=True)
+            title_lower = title.lower()
+            print(f"DEBUG: About to run any() comprehension", flush=True)
+            is_exact_duplicate = any(
+                existing in title_lower or title_lower in existing
+                for existing in all_existing
+            )
+            print(f"DEBUG: Finished any() comprehension", flush=True)
 
-        if is_exact_duplicate:
-            self.logger.info(f"Skipping exact duplicate: {title}")
-            return 0
+            if is_exact_duplicate:
+                self.logger.info(f"Skipping exact duplicate: {title}")
+                return 0
+        except Exception as e:
+            import traceback
+            self.logger.error(f"ERROR in duplicate check: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
 
         # Check for semantic similarity with existing issues
-        if self._is_semantically_similar(title, existing_issues):
-            self.logger.info(f"Skipping semantically similar feature: {title}")
-            return 0
+        try:
+            print(f"DEBUG: About to check semantic similarity", flush=True)
+            print(f"DEBUG: existing_issues type={type(existing_issues)}, len={len(existing_issues) if existing_issues else 0}", flush=True)
+            if self._is_semantically_similar(title, existing_issues):
+                self.logger.info(f"Skipping semantically similar feature: {title}")
+                return 0
+            print(f"DEBUG: Passed semantic similarity check", flush=True)
+        except Exception as e:
+            import traceback
+            self.logger.error(f"ERROR in semantic similarity check: {e}")
+            self.logger.error(f"Traceback: {traceback.format_exc()}")
+            raise
 
         # Check value score
         value_score = feature.get('value_score', 5)
@@ -586,7 +664,12 @@ KEY FILES:
                 issues = self.discover_for_repo(repo)
                 total_issues += issues
             except Exception as e:
+                import traceback
                 self.logger.error(f"Error analyzing {repo['name']}: {e}")
+                error_file = self.work_dir / 'error_traceback.txt'
+                with open(error_file, 'w') as f:
+                    f.write(traceback.format_exc())
+                self.logger.error(f"Full traceback written to {error_file}")
 
         self.logger.info(f"\n{'#'*60}")
         self.logger.info(f"PRODUCT ANALYSIS COMPLETE: {total_issues} feature issues created")

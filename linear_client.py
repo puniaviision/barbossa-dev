@@ -171,9 +171,15 @@ class LinearClient:
         """
 
         result = self._graphql(query)
-        all_labels = result.get('issueLabels', {}).get('nodes', [])
+        raw_labels = result.get('issueLabels', {}).get('nodes', [])
+        self.logger.debug(f"Got {len(raw_labels)} labels from Linear")
+        # Filter out None values and non-dict entries (can happen if labels are deleted)
+        all_labels = [l for l in raw_labels if l is not None and isinstance(l, dict)]
+        self.logger.debug(f"After filtering None/non-dict: {len(all_labels)} labels")
         # Filter to the requested team (labels without team are workspace-wide)
-        labels = [l for l in all_labels if l.get('team', {}).get('key') == team_key or l.get('team') is None]
+        # Note: Use 'or {}' instead of default {} because if team exists but is None, get() returns None
+        labels = [l for l in all_labels if l and ((l.get('team') or {}).get('key') == team_key or l.get('team') is None)]
+        self.logger.debug(f"After team filter for '{team_key}': {len(labels)} labels")
 
         label_ids = []
         for name in label_names:

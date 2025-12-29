@@ -258,11 +258,12 @@ class Barbossa:
                     issue_list_command += issues_context
 
                     # To-Do section with prioritized issues
+                    # NOTE: Linear state is "Todo" (one word), not "To-Do"
                     backlog_section = f"""Before inventing work, check if there are Issues ready to implement:
 
-{tracker.get_issues_context(state="To-Do", limit=5)}
+{tracker.get_issues_context(state="Todo", limit=5)}
 
-If there ARE To-Do issues above:
+If there ARE Todo issues above:
   1. Pick the FIRST one (already prioritized)
   2. Implement exactly what's requested
   3. Name your branch: barbossa/<issue-identifier>-description

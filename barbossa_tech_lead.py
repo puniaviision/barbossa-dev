@@ -31,6 +31,8 @@ from barbossa_firebase import (
     track_run_start,
     track_run_end
 )
+from linear_client import get_linear_client
+import re
 
 
 class BarbossaTechLead:
@@ -135,6 +137,76 @@ class BarbossaTechLead:
 
         with open(self.decisions_file, 'w') as f:
             json.dump(decisions, f, indent=2)
+
+    def _extract_linear_issue_id(self, pr_title: str) -> Optional[str]:
+        """Extract Linear issue ID from PR title (e.g., 'MUS-123: Fix bug' -> 'MUS-123')"""
+        match = re.match(r'^([A-Z]+-\d+):', pr_title)
+        if match:
+            return match.group(1)
+        return None
+
+    def _validate_linear_issue(self, pr_title: str) -> tuple[bool, str]:
+        """
+        Validate that the PR references a real Linear issue that was in To-Do state.
+        Returns (is_valid, reason_if_invalid)
+        """
+        issue_id = self._extract_linear_issue_id(pr_title)
+
+        if not issue_id:
+            return False, "No Linear issue reference in PR title. Title must start with 'MUS-XX:'"
+
+        try:
+            linear = get_linear_client()
+            if not linear:
+                # If Linear is unavailable, log warning but allow PR (graceful degradation)
+                self.logger.warning("Linear client not available - skipping issue validation")
+                return True, ""
+
+            issue = linear.get_issue(issue_id)
+            if not issue:
+                return False, f"Linear issue {issue_id} does not exist. Cannot reference non-existent issues."
+
+            # Check the issue state - we want it to be in To-Do or already In Progress/Done
+            # (In Progress means engineer started, Done means already completed)
+            state_name = issue.state.get('name', '') if issue.state else ''
+            state_type = issue.state.get('type', '') if issue.state else ''
+
+            # Valid states: To Do, In Progress, Done (for re-reviews), or any "started" type
+            invalid_states = ['backlog', 'triage', 'unstarted']
+            if state_type.lower() in invalid_states and state_name.lower() == 'backlog':
+                return False, f"Linear issue {issue_id} is in '{state_name}' state, not 'To-Do'. Only prioritized To-Do issues can be worked on."
+
+            return True, ""
+
+        except Exception as e:
+            self.logger.error(f"Error validating Linear issue: {e}")
+            # On error, allow PR but log warning (graceful degradation)
+            return True, ""
+
+    def _update_linear_issue_done(self, issue_id: str, team_key: str) -> bool:
+        """Update Linear issue to Done state after PR merge"""
+        try:
+            linear = get_linear_client()
+            if not linear:
+                self.logger.warning("Linear client not available - skipping issue status update")
+                return False
+
+            # Get the issue first to get its UUID
+            issue = linear.get_issue(issue_id)
+            if not issue:
+                self.logger.warning(f"Linear issue {issue_id} not found")
+                return False
+
+            # Update to Done state
+            success = linear.update_issue_state(issue.id, "Done", team_key)
+            if success:
+                self.logger.info(f"Updated Linear issue {issue_id} to Done")
+            else:
+                self.logger.warning(f"Failed to update Linear issue {issue_id} to Done")
+            return success
+        except Exception as e:
+            self.logger.error(f"Error updating Linear issue {issue_id}: {e}")
+            return False
 
     def _get_open_prs(self, repo_name: str) -> List[Dict]:
         """Get all open PRs for a repository with full context"""
@@ -523,6 +595,16 @@ class BarbossaTechLead:
                         self.logger.error(f"Merge failed: {result.stderr}")
                 else:
                     self.logger.info(f"Successfully merged PR #{pr_number}")
+                    # Update Linear issue to Done
+                    pr_title = pr.get('title', '')
+                    issue_id = self._extract_linear_issue_id(pr_title)
+                    if issue_id:
+                        # Get team key from config
+                        issue_tracker = self.config.get('issue_tracker', {})
+                        team_key = issue_tracker.get('linear', {}).get('team_key', 'MUS')
+                        self._update_linear_issue_done(issue_id, team_key)
+                    else:
+                        self.logger.warning(f"PR #{pr_number} has no Linear issue reference in title")
                 return success
 
             elif action == 'CLOSE':
@@ -623,6 +705,20 @@ _Senior Engineer: Please address the above feedback and push updates._"""
 
         # Quick rejection checks (before Claude review)
         quick_reject = None
+
+        # FIRST: Validate Linear issue reference
+        is_valid, invalid_reason = self._validate_linear_issue(pr['title'])
+        if not is_valid:
+            quick_reject = {
+                'decision': 'CLOSE',
+                'reasoning': invalid_reason,
+                'value_score': 0,
+                'quality_score': 0,
+                'bloat_risk': 'HIGH',
+                'auto_rejected': True,
+                'linear_validation_failed': True
+            }
+            self.logger.info(f"AUTO: Closing PR - Linear validation failed: {invalid_reason}")
 
         # Check for repeated REQUEST_CHANGES (3-strikes rule)
         tech_lead_change_requests = [
